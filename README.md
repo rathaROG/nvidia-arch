@@ -87,4 +87,5 @@ compute_90
 - Legacy GPU Compute Capability - [Official NVIDIA](https://developer.nvidia.com/cuda/gpus/legacy)
 - CUDA Toolkit Archive - [Official NVIDIA](https://developer.nvidia.com/cuda-toolkit-archive)
 - cuDNN Archive - [Official NVIDIA](https://developer.nvidia.com/cudnn-archive)
+- cuDNN Tarbal (Zip) - [Official NVIDIA](https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/)
 - CUDA - [Wikipedia](https://en.wikipedia.org/wiki/CUDA)
