@@ -17,7 +17,7 @@
 
 ---
 
-### CUDA version and supported compute capabilities
+### CUDA versions and supported compute capabilities
 
 | CUDA Version  | Supported Compute Capabilities |
 |---------------|-------------------------------|
