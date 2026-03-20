@@ -202,35 +202,42 @@ def normalize_cuda_ver(cuda_ver: Optional[Union[str, float, int]]) -> Optional[s
 
     raise TypeError("cuda_ver must be None, float, int, or string")
 
+def _verify_dir(path):
+    """Verify existence; if missing, set to None"""
+    return path if path and os.path.isdir(path) else None
+
 def detect_ctk(raise_on_error: bool = False) -> Optional[Dict[str, Optional[str]]]:
     """
-    Detect the installed CUDA version and path using nvcc.
+    Detect CUDA Toolkit version, root, include, and lib paths.
 
     Parameters
     ----------
     raise_on_error : bool, optional
-        Whether to raise RuntimeError if CUDA version cannot be detected. Default is False.
+        Raise RuntimeError if detection fails. Default is False.
 
     Returns
     -------
     dict or None
-        Dictionary with keys:
-            - 'version': CUDA version in 'major.minor' format, or None if not detected.
-            - 'path'   : CUDA installation path, or None if not detected.
-        Returns None if detection fails and raise_on_error is False.
+        Dictionary:
+            - 'version': CUDA version (str or None)
+            - 'root': CUDA Toolkit root (str or None)
+            - 'include': dict:
+                - 'root': base include directory
+                - 'cuda': cuda headers directory
+                - 'cub': cub headers directory
+                - 'thrust': thrust headers directory
+            - 'lib': CUDA library path (str or None)
 
     Raises
     ------
     RuntimeError
-        If raise_on_error is True and CUDA version cannot be detected.
+        If raise_on_error is True and detection fails.
     """
     try:
-        # Get version
         out = subprocess.check_output(["nvcc", "--version"]).decode("utf-8")
         match = re.search(r"release (\d+\.\d+)", out)
         version = match.group(1) if match else None
 
-        # Get CUDA path
         if sys.platform.startswith("win"):
             nvcc_path_proc = subprocess.run(["where", "nvcc"], capture_output=True, text=True)
             nvcc_path = nvcc_path_proc.stdout.splitlines()[0] if nvcc_path_proc.stdout else None
@@ -238,19 +245,55 @@ def detect_ctk(raise_on_error: bool = False) -> Optional[Dict[str, Optional[str]
             nvcc_path_proc = subprocess.run(["which", "nvcc"], capture_output=True, text=True)
             nvcc_path = nvcc_path_proc.stdout.strip() if nvcc_path_proc.stdout else None
 
-        cuda_path = os.path.dirname(os.path.dirname(nvcc_path)) if nvcc_path else None
+        root = os.path.dirname(os.path.dirname(nvcc_path)) if nvcc_path else None
+        include_root = os.path.join(root, "include") if root else None
 
-        if version is None or cuda_path is None:
-            msg = "CUDA version or path could not be detected. Ensure nvcc is in PATH."
+        # set include paths
+        if include_root:
+            if version and float(version) >= 13.0:
+                cccl_path = os.path.join(include_root, "cccl")
+                cuda_include = os.path.join(cccl_path, "cuda")
+                cub_include = os.path.join(cccl_path, "cub")
+                thrust_include = os.path.join(cccl_path, "thrust")
+            else:
+                cuda_include = os.path.join(include_root, "cuda")
+                cub_include = os.path.join(include_root, "cub")
+                thrust_include = os.path.join(include_root, "thrust")
+
+        include_root_verified = _verify_dir(include_root)
+        cuda_include = _verify_dir(cuda_include)
+        cub_include = _verify_dir(cub_include)
+        thrust_include = _verify_dir(thrust_include)
+
+        # Library path
+        if sys.platform.startswith("win"):
+            lib_path = os.path.join(root, "lib", "x64") if root else None
+        else:
+            lib_path = os.path.join(root, "lib64") if root else None
+
+        lib_path = lib_path if lib_path and os.path.isdir(lib_path) else None
+
+        if version is None or root is None:
+            msg = "CUDA Toolkit version or root directory could not be detected. Ensure nvcc is in PATH."
             if raise_on_error:
                 raise RuntimeError(msg)
             print(msg)
             return None
 
-        return {"version": version, "path": cuda_path}
+        return {
+            "version": version,
+            "root": root,
+            "include": {
+                "root": include_root_verified,
+                "cuda": cuda_include,
+                "cub": cub_include,
+                "thrust": thrust_include,
+            },
+            "lib": lib_path,
+        }
 
     except Exception:
-        msg = "CUDA version or path could not be detected. Ensure nvcc is in PATH."
+        msg = "CUDA Toolkit version or root directory could not be detected. Ensure nvcc is in PATH."
         if raise_on_error:
             raise RuntimeError(msg)
         print(msg)
