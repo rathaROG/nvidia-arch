@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Ratha SIV | Apache-2.0 License
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 from .arches import (
     ALL_ARCHS,
