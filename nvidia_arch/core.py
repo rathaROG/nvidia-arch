@@ -200,19 +200,22 @@ def normalize_cuda_ver(cuda_ver: Optional[Union[str, float, int]]) -> Optional[s
 
     raise TypeError("cuda_ver must be None, float, int, or string")
 
-def detect_ctk(raise_on_error: bool = False) -> Optional[str]:
+def detect_ctk(raise_on_error: bool = False) -> Optional[Dict[str, Optional[str]]]:
     """
-    Detect the installed CUDA version using nvcc.
+    Detect the installed CUDA version and path using nvcc.
 
     Parameters
     ----------
     raise_on_error : bool, optional
-        Whether to raise RuntimeError if version cannot be detected. Default is False.
+        Whether to raise RuntimeError if CUDA version cannot be detected. Default is False.
 
     Returns
     -------
-    str or None
-        CUDA version in 'major.minor' format, or None if not detected.
+    dict or None
+        Dictionary with keys:
+            - 'version': CUDA version in 'major.minor' format, or None if not detected.
+            - 'path'   : CUDA installation path, or None if not detected.
+        Returns None if detection fails and raise_on_error is False.
 
     Raises
     ------
@@ -220,11 +223,32 @@ def detect_ctk(raise_on_error: bool = False) -> Optional[str]:
         If raise_on_error is True and CUDA version cannot be detected.
     """
     try:
+        # Get version
         out = subprocess.check_output(["nvcc", "--version"]).decode("utf-8")
         match = re.search(r"release (\d+\.\d+)", out)
-        return match.group(1) if match else None
+        version = match.group(1) if match else None
+
+        # Get CUDA path
+        if sys.platform.startswith("win"):
+            nvcc_path_proc = subprocess.run(["where", "nvcc"], capture_output=True, text=True)
+            nvcc_path = nvcc_path_proc.stdout.splitlines()[0] if nvcc_path_proc.stdout else None
+        else:
+            nvcc_path_proc = subprocess.run(["which", "nvcc"], capture_output=True, text=True)
+            nvcc_path = nvcc_path_proc.stdout.strip() if nvcc_path_proc.stdout else None
+
+        cuda_path = os.path.dirname(os.path.dirname(nvcc_path)) if nvcc_path else None
+
+        if version is None or cuda_path is None:
+            msg = "CUDA version or path could not be detected. Ensure nvcc is in PATH."
+            if raise_on_error:
+                raise RuntimeError(msg)
+            print(msg)
+            return None
+
+        return {"version": version, "path": cuda_path}
+
     except Exception:
-        msg = "CUDA version could not be detected. Ensure nvcc is in PATH."
+        msg = "CUDA version or path could not be detected. Ensure nvcc is in PATH."
         if raise_on_error:
             raise RuntimeError(msg)
         print(msg)
@@ -330,7 +354,8 @@ def get_architectures(
         # Try nvcc --list-gpu-arch, fallback to nvcc --version version map
         sm_list = nvcc_list_arches()
         if sm_list is None:
-            detected = detect_ctk(raise_on_error=raise_on_error)
+            ctk_info = detect_ctk(raise_on_error=raise_on_error)
+            detected = ctk_info["version"] if ctk_info else None
             if detected is None or detected not in CUDA_FILTERS:
                 msg = f"Cannot detect a supported CUDA version (detected: {detected})"
                 if raise_on_error:
