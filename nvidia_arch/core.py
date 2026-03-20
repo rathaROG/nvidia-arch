@@ -7,6 +7,8 @@ import subprocess
 from typing import Optional, Union, List, Dict, Any
 from .arches import ALL_ARCHS, TYPE_FILTERS, CUDA_FILTERS
 
+PTX_SUFFIX_RE = re.compile(r"\+ptx$", re.IGNORECASE)
+
 def _run_nvidia_smi(query_args: str) -> Optional[str]:
     """
     Internal helper to run nvidia-smi with specified query arguments and return decoded output.
@@ -450,9 +452,12 @@ def make_gencode_flags(
 
     PTX emission policy:
     --------------------
-    If add_ptx=True, PTX is added **only for the highest SM architecture** in the
+    (1) If add_ptx=True, PTX is added **only for the highest SM architecture** in the
     filtered/validated list. This follows NVIDIA best practices and matches the
     strategy used by PyTorch, TensorFlow, and official CUDA wheels.
+
+    (2) If any architecture string ends with '+PTX', only those architectures receive 
+    PTX code generation. In this case, the global add_ptx flag is ignored.
 
     Parameters
     ----------
@@ -460,14 +465,14 @@ def make_gencode_flags(
         Either:
         - sm_list: ['86', '89', ...] (list of SM codes)
         - cc_list: ['8.6', '8.9', ...] (list of compute capabilities)
-        - cc_string: '8.6;8.9' (semicolon-delimited string)
+        - cc_string: '8.6;8.9+PTX' (semicolon-delimited string)
     min_sm : str or int, optional
         Filter to architectures >= min_sm.
     verify_arch : bool, optional
         If True, ensure all SM codes are in ALL_ARCHS. Default is True.
     add_ptx : bool, optional
         If True, include PTX only for the highest SM architecture.
-        Example:
+        Example: arch_input='8.6;8.9', add_pt=True
             sm_86 → -gencode=arch=compute_86,code=sm_86
             sm_89 → -gencode=arch=compute_89,code=[sm_89,compute_89]  (highest)
 
@@ -483,45 +488,61 @@ def make_gencode_flags(
     ValueError
         For unknown SM/CC code or unrecognized entry.
     """
-    # Normalize input into a list of strings
+        # Normalize input into a list of strings
     if isinstance(arch_input, str):
-        arch_list = [item.strip() for item in arch_input.split(";") if item.strip()]
+        raw_list = [item.strip() for item in arch_input.split(";") if item.strip()]
     else:
-        arch_list = [str(item).strip() for item in arch_input if str(item).strip()]
+        raw_list = [str(item).strip() for item in arch_input if str(item).strip()]
 
     # Convert min_sm to int if provided
     if min_sm is not None:
         min_sm = int(min_sm)
 
-    # Parse and normalize SM codes
-    sms = []
-    for item in arch_list:
-        if item.isdigit() and len(item) in (2, 3):
-            sm = item
-        elif "." in item:
-            major, minor = item.split(".")
+    parsed = []  # list of (sm: str, wants_ptx: bool)
+    for item in raw_list:
+        # Detect +PTX suffix
+        wants_ptx = bool(PTX_SUFFIX_RE.search(item))
+        clean = PTX_SUFFIX_RE.sub("", item).strip()
+        # Parse numeric part
+        if clean.isdigit() and len(clean) in (2, 3):
+            sm = clean
+        elif "." in clean:
+            major, minor = clean.split(".")
             sm = f"{int(major) * 10 + int(minor)}"
         else:
             raise ValueError(f"Unrecognized architecture string: '{item}'")
+        # Apply min_sm filter
         if min_sm is not None and int(sm) < min_sm:
             continue
+        # Validate
         if verify_arch and sm not in ALL_ARCHS:
             raise ValueError(f"Invalid SM code '{sm}'.")
-        sms.append(sm)
+        parsed.append((sm, wants_ptx))
 
-    if not sms:
+    if not parsed:
         return []
 
-    # Highest SM gets PTX (if enabled)
-    sms = sorted(sms, key=lambda x: int(x))
+    # Sort by SM
+    parsed.sort(key=lambda x: int(x[0]))
+    sms = [sm for sm, _ in parsed]
+
+    # Determine PTX policy
+    any_explicit_ptx = any(wants for _, wants in parsed)
     highest = sms[-1]
-    flags: List[str] = []
-    for sm in sms:
-        if add_ptx and sm == highest:
+
+    flags = []
+    for sm, wants_ptx in parsed:
+        emit_ptx = False
+        if wants_ptx:
+            emit_ptx = True
+        elif not any_explicit_ptx and add_ptx and sm == highest:
+            emit_ptx = True
+        if emit_ptx:
             code = f"[sm_{sm},compute_{sm}]"
         else:
             code = f"sm_{sm}"
         flags.append(f"-gencode=arch=compute_{sm},code={code}")
+
     return flags
 
 def print_summary(
