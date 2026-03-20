@@ -1,0 +1,52 @@
+# Copyright (c) 2026 Ratha SIV | Apache-2.0 License
+
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nvidia-arch"
+dynamic = ["version"]
+description = "A lightweight tool for detecting and querying NVIDIA GPU architectures (SM/CC), and generating `-gencode` flags for CUDA builds"
+readme = { file = "NVIDIA-ARCH.md", content-type = "text/markdown" }
+requires-python = ">=3"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = [
+    "machine learning", "deep learning", "nvidia", "cuda", "nvcc", 
+    "compute capability", "compute architecture", "CC", "SM", "AI"
+]
+authors = [{ name = "Ratha SIV" }]
+maintainers = [{ name = "rathaROG" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+]
+
+[project.urls]
+Homepage = "https://github.com/rathaROG/nvidia-arch"
+Repository = "https://github.com/rathaROG/nvidia-arch.git"
+GitHub = "https://github.com/rathaROG/nvidia-arch"
+
+[tool.setuptools.dynamic]
+version = { attr = "nvidia_arch.__version__" }

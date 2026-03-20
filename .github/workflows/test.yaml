@@ -1,0 +1,35 @@
+name: Test
+
+on: [workflow_dispatch]
+
+jobs:
+  test:
+    name: Test
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: "${{ matrix.python-version }}"
+    - name: 👷 Test build from source ⚒️
+      run: |
+        python -m pip install --upgrade pip
+        pip install build
+        python -m build
+    - name: 👩‍💻 Test install from GitHub 🌐
+      run: pip install git+https://github.com/rathaROG/nvidia-arch.git
+    - name: 🧑‍🔬 Test functions 👨‍⚖️
+      run: |
+        python -m pip show nvidia-arch
+        python -c "import nvidia_arch; print(nvidia_arch.__version__)"
+        python -c "from nvidia_arch import print_summary; print_summary(min_sm=60)"
+        python -c "from nvidia_arch import get_architectures; print(get_architectures(cuda_ver='13.0', min_sm=75))"
+        python -c "from nvidia_arch import get_architectures; print(get_architectures(gpu_type='cons+jets', cuda_ver='13.0', min_sm=75, return_mode='cc_string'))"
+        python -c "from nvidia_arch import get_architectures, make_gencode_flags; arches = get_architectures(gpu_type='jets', cuda_ver='13.0', min_sm=75); print(make_gencode_flags(arches))"
+

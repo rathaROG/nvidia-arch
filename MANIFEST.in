@@ -1,0 +1,13 @@
+# Include top-level docs and license
+include *.cff
+include *.in
+include *.md
+include LICENSE
+
+# Exclude Python cache files everywhere
+global-exclude __pycache__/
+global-exclude *.pyc
+
+# Remove development-only directories
+prune .github
+prune .vscode

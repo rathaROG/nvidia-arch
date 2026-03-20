@@ -2,7 +2,7 @@
 
 ![cuda-2026](https://github.com/user-attachments/assets/dea107b7-e987-4c15-9749-ce3c924b57b2)
 
-**JUST A NOTE**
+**~~JUST A NOTE~~ 👉 A NOTE & A PACKAGE [`nvidia-arch`](https://github.com/rathaROG/nvidia-arch/blob/main/NVIDIA-ARCH.md)**
 
 ***Updated on 2026-03-19***
 
@@ -20,15 +20,15 @@
 ### CUDA versions and supported compute capabilities
 
 | CUDA Version  | Supported Compute Capabilities |
-|---------------|-------------------------------|
-| 11.0          | 3.5 – 8.0                     |
-| 11.1 – 11.4   | 3.5 – 8.6                     |
-| 11.5 – 11.7   | 3.5 – 8.7                     |
-| 11.8          | 3.5 – 9.0                     |
-| 12.0 – 12.6   | 5.0 – 9.0                     |
-| 12.8          | 5.0 – 12.0                    |
-| 12.9          | 5.0 – 12.1                    |
-| 13.0 – 13.2   | 7.5 – 12.1                    |
+|---------------|--------------------------------|
+| 11.0          | 3.5 – 8.0                      |
+| 11.1 – 11.4   | 3.5 – 8.6                      |
+| 11.5 – 11.7   | 3.5 – 8.7                      |
+| 11.8          | 3.5 – 9.0                      |
+| 12.0 – 12.6   | 5.0 – 9.0                      |
+| 12.8          | 5.0 – 12.0                     |
+| 12.9          | 5.0 – 12.1                     |
+| 13.0 – 13.2   | 7.5 – 12.1                     |
 
 ---
 
@@ -38,14 +38,11 @@
 # All archs from 35
 ALL_ARCH_QE35 = ["35", "37", "50", "52", "53", "60", "61", "62", "70", "72", "75", "80", "86", "87", "88", "89", "90", "100", "103", "110", "120", "121"]
 
-# All archs from 60
-ALL_ARCH_QE60 = ["60", "61", "62", "70", "72", "75", "80", "86", "87", "88", "89", "90", "100", "103", "110", "120", "121"]
+# All archs from 35 for Consumer/Workstation GPUs
+ALL_ARCH_QE60_CONS = ["35", "50", "52", "60", "61", "70", "75", "86", "89", "120", "121"]
 
-# All archs from 60 for Consumer/Workstation GPUs
-ALL_ARCH_QE60_CONS = ["60", "61", "70", "75", "86", "89", "120", "121"]
-
-# All archs from 60 for Jetson
-ALL_ARCH_QE60_JETS = ["62", "72", "87", "110"]
+# All archs from 35 for Jetson/Embedded GPUs
+ALL_ARCH_QE60_JETS = ["53", "62", "72", "87", "110"]
 ```
 
 ---
