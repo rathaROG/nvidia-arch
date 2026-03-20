@@ -206,10 +206,7 @@ def _verify_dir(path: Optional[str]) -> Optional[str]:
     """Return path if it exists as a directory, else None."""
     return path if path and os.path.isdir(path) else None
 
-def detect_ctk(
-    raise_on_error: bool = False,
-    beautify: bool = False
-) -> Optional[Dict[str, Any]]:
+def detect_ctk(raise_on_error: bool = False) -> Optional[Dict[str, Any]]:
     """
     Detect CUDA Toolkit version, root, include, and lib paths.
 
@@ -217,8 +214,6 @@ def detect_ctk(
     ----------
     raise_on_error : bool, optional
         If True, raise RuntimeError if detection fails. Default: False.
-    beautify : bool, optional
-        If True, print the detected CUDA info as a pretty, human-readable dict. Default: False.
 
     Returns
     -------
@@ -242,7 +237,7 @@ def detect_ctk(
     Examples
     --------
     >>> detect_ctk()
-    >>> detect_ctk(beautify=True)
+    >>> detect_ctk(beautify=False)
     """
     try:
         out = subprocess.check_output(["nvcc", "--version"]).decode("utf-8")
@@ -301,10 +296,6 @@ def detect_ctk(
             },
             "lib": lib_path,
         }
-
-        if beautify:
-            pretty = json.dumps(cuda_info, indent=2)
-            print("CUDA Toolkit Environment:\n" + pretty)
 
         return cuda_info
 
