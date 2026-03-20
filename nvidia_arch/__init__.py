@@ -20,10 +20,12 @@ from .arches import (
 )
 
 from .core import (
+    find_gpu,    
     detect_ctk,
     normalize_cuda_ver,
     nvcc_list_arches,
     get_architectures,
+    get_compute_cap,
     make_gencode_flags,
     print_summary,
 )
@@ -36,10 +38,12 @@ __all__: list = [
     "TYPE_FILTERS",
     "CUDA_FILTERS_RANGES",
     "CUDA_FILTERS",
+    "find_gpu",
     "detect_ctk",
     "normalize_cuda_ver",
     "nvcc_list_arches",
     "get_architectures",
+    "get_compute_cap",
     "make_gencode_flags",
     "print_summary",
 ]
