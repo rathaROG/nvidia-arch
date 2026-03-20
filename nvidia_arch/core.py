@@ -140,6 +140,8 @@ def get_architectures(
     3. If that fails, fall back to parsing ``nvcc --version`` and using the
        internal CUDA capability table.
     """
+    gpu_type = str(gpu_type).strip().lower()
+    return_mode = str(return_mode).strip().lower()
 
     # Step 1: Normalize CUDA version (may be None)
     cuda_ver_norm = normalize_cuda_ver(cuda_ver)
@@ -265,6 +267,8 @@ def print_summary(return_mode="cc_string", min_sm=None):
         SM number with two/three digit strings, filtering architectures to 
         those >= min_sm (e.g. 60).
     """
+    return_mode = str(return_mode).strip().lower()
+
     col_names = [
         "Arch (min..max) ",
         "Consumer/Workstation (cons)",
