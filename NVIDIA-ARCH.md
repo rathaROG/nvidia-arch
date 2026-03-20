@@ -19,7 +19,7 @@ A lightweight tool for detecting and querying NVIDIA GPU architectures (SM/CC), 
 ## ❓ Why this exists
 
 Working with CUDA toolchains is notoriously inconsistent across systems, CUDA versions, and GPU families.  
-Different machines report different supported architectures, `nvcc` behaves differently depending on the installed CTK, and build scripts often end up hard‑coding SM versions that quickly become outdated.
+Different machines report different supported architectures, `nvcc` behaves differently depending on the installed CTK (CUDA Toolkit), and build scripts often end up hard‑coding SM versions that quickly become outdated.
 
 This package solves that by providing:
 
