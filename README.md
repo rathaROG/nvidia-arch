@@ -1,6 +1,6 @@
 <div align="center">
 
-![cuda-2026](https://github.com/user-attachments/assets/dea107b7-e987-4c15-9749-ce3c924b57b2)
+![cover](https://raw.githubusercontent.com/rathaROG/nvidia-arch/refs/heads/main/assets/nvidia-arch.jpg)
 
 **~~JUST A NOTE~~ 👉 A NOTE & A PACKAGE [`nvidia-arch`](https://github.com/rathaROG/nvidia-arch/blob/main/NVIDIA-ARCH.md)**
 
