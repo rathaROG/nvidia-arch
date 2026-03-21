@@ -153,6 +153,17 @@ print(json.dumps(gpu_info, indent=2))
 ]
 ```
 
+#### Get compute cap of the GPU(s) installed
+
+```python
+from nvidia_arch import get_compute_cap
+get_compute_cap(return_mode='cc_string', add_ptx=True)
+```
+
+```bash
+'8.6;8.9+PTX'
+```
+
 #### Get supported SM architectures from installed CTK (CUDA Toolkit)
 
 ```python
