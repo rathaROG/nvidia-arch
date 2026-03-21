@@ -28,27 +28,38 @@ def _run_nvidia_smi(query_args: str) -> Optional[str]:
         return None
 
 
-def get_compute_cap(return_mode: str = "sm_list") -> Optional[Union[List[str], str]]:
+def get_compute_cap(return_mode: str = "sm_list", add_ptx: bool = False) -> Optional[Union[List[str], str]]:
     """
     Returns the compute capabilities of detected NVIDIA GPUs (unique, sorted, no duplicates).
 
-    Args:
-        return_mode : {'sm_list', 'cc_list', 'cc_string'}, optional
-            Output type:
-                - 'sm_list': list of SM codes as strings, e.g. ['86', '89', ...]
-                - 'cc_list': list of compute capability strings, e.g. ['8.6', '8.9', ...]
-                - 'cc_string': semicolon-delimited string, e.g. '8.6;8.9'
+    PTX emission policy
+    -------------------
+    If ``add_ptx=True``, PTX is added **only for the highest SM architecture** in the
+    filtered/validated list. This matches NVIDIA best practices and official CUDA wheels.
 
-    Returns:
-        List[str] or str: Requested format based on return_mode, or None if not available.
+    Parameters
+    ----------
+    return_mode : {'sm_list', 'cc_list', 'cc_string'}, optional
+        Output format:
+            - 'sm_list': list of SM codes as strings, e.g. ['86', '89', ...]
+            - 'cc_list': list of compute capability strings, e.g. ['8.6', '8.9', ...]
+            - 'cc_string': semicolon-delimited string, e.g. '8.6;8.9'
+    add_ptx : bool, optional
+        If True, add '+PTX' suffix to the highest architecture.
 
-    Example:
-        >>> get_compute_cap()
-        ['86', '89', '120']
-        >>> get_compute_cap(return_mode='cc_string')
-        '8.6;8.9;12.0'
-        >>> get_compute_cap(return_mode='cc_list')
-        ['8.6', '8.9', '12.0']
+    Returns
+    -------
+    list of str or str or None
+        Requested format based on ``return_mode``, or None if GPUs not found.
+
+    Examples
+    --------
+    >>> get_compute_cap()
+    ['86', '89', '120']
+    >>> get_compute_cap(return_mode='cc_list')
+    ['8.6', '8.9', '12.0']
+    >>> get_compute_cap(return_mode='cc_string', add_ptx=True)
+    '8.6;8.9;12.0+PTX'
     """
     return_mode = str(return_mode).strip().lower()
     output = _run_nvidia_smi("compute_cap")
@@ -65,6 +76,11 @@ def get_compute_cap(return_mode: str = "sm_list") -> Optional[Union[List[str], s
             seen.add(value)
     if not cc_strs:
         return None
+
+    # Optionally add PTX only to the highest arch
+    cc_strs = sorted(cc_strs, key=lambda x: tuple(map(int, x.split('.'))))
+    if add_ptx and cc_strs:
+        cc_strs[-1] = cc_strs[-1] + "+PTX"
 
     if return_mode == "cc_list":
         return cc_strs
