@@ -20,7 +20,7 @@ A lightweight tool for detecting and querying NVIDIA GPU architectures (SM/CC), 
 
 > If you just want to see my note, see [README.md](https://github.com/rathaROG/nvidia-arch/blob/main/README.md).
 
-## ❓ Why this exists
+## 💡 Why this exists
 
 Working with CUDA toolchains is notoriously inconsistent across systems, CUDA versions, and GPU families. Different machines report different supported architectures, `nvcc` behaves differently depending on the installed CTK (CUDA Toolkit), and build scripts often end up hard‑coding SM versions that quickly become outdated.
 
