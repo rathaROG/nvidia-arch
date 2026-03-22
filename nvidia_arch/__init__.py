@@ -17,6 +17,7 @@ from .arches import (
     TYPE_FILTERS,
     CUDA_FILTERS_RANGES,
     CUDA_FILTERS,
+    CUDA_EXCLUDES,
 )
 
 from .core import (
@@ -39,6 +40,7 @@ __all__: list = [
     "TYPE_FILTERS",
     "CUDA_FILTERS_RANGES",
     "CUDA_FILTERS",
+    "CUDA_EXCLUDES",
     "find_gpu",
     "detect_ctk",
     "normalize_cuda_ver",

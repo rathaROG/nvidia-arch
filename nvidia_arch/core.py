@@ -4,8 +4,8 @@ import os
 import re
 import sys
 import subprocess
-from typing import Optional, Union, List, Dict, Any
-from .arches import ALL_ARCHS, TYPE_FILTERS, CUDA_FILTERS
+from typing import Optional, Union, List, Dict, Tuple, Any
+from .arches import ALL_ARCHS, TYPE_FILTERS, CUDA_FILTERS, CUDA_EXCLUDES
 
 
 PTX_SUFFIX_RE = re.compile(r"\+ptx$", re.IGNORECASE)
@@ -382,9 +382,9 @@ def _sm_to_cc(sm: Union[str, int]) -> str:
 
 def validate_cc_string(
     cc_string: str,
-    named_arches: dict = None,
+    named_arches: Optional[Dict[str, str]] = None,
     force_highest_ptx: bool = False,
-    against_cuda_ver: str = None,
+    against_cuda_ver: Optional[str] = None,
 ) -> str:
     """
     Validate and normalize a PyTorch-style cc_string, optionally ensuring all architectures are valid
@@ -706,6 +706,46 @@ def make_gencode_flags(
     return flags
 
 
+def _cuda_excludes_footnotes(
+    cuda_excludes: Dict[Tuple[float, float], List[Any]],
+    return_mode: str = "cc_string"
+) -> List[str]:
+    """
+    Generate explanatory footnotes regarding architectures that are excluded from
+    support for specific CUDA version ranges.
+
+    Parameters
+    ----------
+    cuda_excludes : dict
+        Mapping of CUDA version (min, max) tuple to list of architecture numbers (SM codes).
+    return_mode : {'sm_list', 'cc_list', 'cc_string'}, optional
+        Controls formatting of architecture numbers.
+        - If 'cc_' prefix, formats as compute capability (e.g., '8.8').
+        - Otherwise, outputs as SM numbers (e.g., '88').
+
+    Returns
+    -------
+    List[str]
+        A list of formatted footnote strings, one per exclusion block.
+    """
+    # Import _sm_to_cc if it's in core
+    from .core import _sm_to_cc  # or define here if not available for import
+
+    notes = []
+    for (vmin, vmax), arches in cuda_excludes.items():
+        if return_mode.startswith("cc"):
+            arch_list = ", ".join(_sm_to_cc(str(a)) for a in arches)
+        else:
+            arch_list = ", ".join(str(a) for a in arches)
+        vmin_str = f"{vmin:.1f}"
+        vmax_str = f"{vmax:.1f}"
+        notes.append(
+            f"Architecture(s) {arch_list} is not officially supported in CUDA {vmin_str}–{vmax_str}; "
+            f"first appears as supported in CUDA {int(vmax) + 1}.0 or later."
+        )
+    return notes
+
+
 def print_summary(
     return_mode: str = "cc_string",
     min_sm: Optional[Union[str, int]] = None
@@ -716,7 +756,9 @@ def print_summary(
     Parameters
     ----------
     return_mode : {'sm_list', 'cc_list', 'cc_string'}, optional
-        Format for architectures (default: 'cc_string').
+        Controls formatting of architecture numbers.
+        - If 'cc_' prefix, formats as compute capability (e.g., '8.8').
+        - Otherwise, outputs as SM numbers (e.g., '88').
     min_sm : str or int, optional
         Minimum SM number to include.
 
@@ -735,7 +777,6 @@ def print_summary(
         "Consumer/Workstation (cons)",
         "Jetson (jets)"
     ]
-    types = ["all", "cons", "jets"]
     versions = sorted(CUDA_FILTERS.keys(), key=lambda x: (int(x.split(".")[0]), int(x.split(".")[1])))
 
     sep = ";"
@@ -826,5 +867,13 @@ def print_summary(
     # Footnote: all archs filtered by min_sm, returned in current mode
     all_archs = [sm for sm in ALL_ARCHS if min_sm is None or int(sm) >= int(min_sm)]
     footnote = format_list(all_archs)
-    print(f"* All NVIDIA Architectures:\n{footnote}")
+    print(f"\n* All NVIDIA Architectures:\n  {footnote}")
+
+    # Footnote: CUDA versions and their unsupported architectures
+    notes = _cuda_excludes_footnotes(CUDA_EXCLUDES, return_mode=return_mode)
+    if notes:
+        print("\n* Mysterious Architectures:")
+        for idx, note in enumerate(notes, start=1):
+            print(f"  {idx}. {note}")
+    print("\n")
 

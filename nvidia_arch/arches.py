@@ -54,6 +54,12 @@ CUDA_FILTERS_RANGES = {
 }
 """dict: Mapping CUDA version ranges to supported SM ranges."""
 
+# Arches to exclude for each CUDA version (those that are valid but not supported by that CUDA version)
+CUDA_EXCLUDES = {
+    (11.8, 12.9): [88],
+}
+"""dict: Mapping CUDA version ranges to lists of valid but unsupported SM codes."""
+
 # CUDA filters for each CUDA version
 CUDA_FILTERS = {}
 for (vmin, vmax), (amin, amax) in CUDA_FILTERS_RANGES.items():
@@ -63,9 +69,15 @@ for (vmin, vmax), (amin, amax) in CUDA_FILTERS_RANGES.items():
         minor = int(round((v - major) * 10))
         key = f"{major}.{minor}"
 
+        # Find excludes for this CUDA version
+        excludes = set()
+        for (ex_min, ex_max), ex_arches in CUDA_EXCLUDES.items():
+            if ex_min <= v <= ex_max + 1e-9:
+                excludes.update(str(a) for a in ex_arches)
+
         CUDA_FILTERS[key] = [
             arch for arch in ALL_ARCHS
-            if amin <= int(arch) <= amax
+            if amin <= int(arch) <= amax and arch not in excludes
         ]
         v = round(v + 0.1, 1)
 """dict: Mapping CUDA version strings ('major.minor') to lists of supported SM codes."""
