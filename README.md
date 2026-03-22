@@ -19,18 +19,19 @@
 
 ### CUDA versions and supported compute capabilities
 
-| CUDA Version  | Supported Compute Capabilities | Exclusive Compute Capabilities   |
-|---------------|--------------------------------|----------------------------------|
-| 11.0          | 3.5 – 8.0                      |                                  |
-| 11.1 – 11.4   | 3.5 – 8.6                      |                                  |
-| 11.5 – 11.7   | 3.5 – 8.7                      |                                  |
-| 11.8          | 3.5 – 9.0                      |                                  |
-| 12.0 – 12.6   | 5.0 – 9.0                      |                                  |
-| 12.8          | 5.0 – 12.0                     |                                  |
-| 12.9          | 5.0 – 12.1                     |                                  |
-| 13.0 – 13.2   | 7.5 – 12.1                     | 8.8 ¹                            |
+| CUDA Version    | Supported Compute Capabilities |
+|-----------------|--------------------------------|
+| 11.0            | 3.5 – 8.0                      |
+| 11.1 – 11.4     | 3.5 – 8.6                      |
+| 11.5 – 11.7     | 3.5 – 8.7                      |
+| 11.8            | 3.5 – 9.0                      |
+| 12.0 – 12.6     | 5.0 – 9.0                      |
+| 12.8 ¹          | 5.0 – 12.0                     |
+| 12.9            | 5.0 – 12.1                     |
+| 13.0 ² – 13.2 ² | 7.5 – 12.1                     |
 
-<sup>¹ 8.8 is mysterious; it is not documented or explained anywhere prior to CUDA 13.0, but it appears as supported starting from CUDA 13.0, see: [mysterious-88.png](https://github.com/rathaROG/nvidia-arch/blob/main/assets/mysterious-88.png). </sup><br>
+<sup>¹ CUDA 12.8 does not include arch/compute 10.3 even though it already supports arch/compute 12.0. </sup><br>
+<sup>² CUDA 13.x includes a mysterious arch/compute 8.8 which is not documented or explained anywhere, see: [mysterious-88.png](https://github.com/rathaROG/nvidia-arch/blob/main/assets/mysterious-88.png). </sup><br>
 
 ---
 
