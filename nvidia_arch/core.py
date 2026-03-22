@@ -740,8 +740,7 @@ def _cuda_excludes_footnotes(
         vmin_str = f"{vmin:.1f}"
         vmax_str = f"{vmax:.1f}"
         notes.append(
-            f"Architecture(s) {arch_list} is not officially supported in CUDA {vmin_str}–{vmax_str}; "
-            f"first appears as supported in CUDA {int(vmax) + 1}.0 or later."
+            f"Architecture(s) {arch_list} is not officially supported in CUDA {vmin_str}–{vmax_str}."
         )
     return notes
 
