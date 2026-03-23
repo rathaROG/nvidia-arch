@@ -7,9 +7,11 @@
 [![Build](https://github.com/rathaROG/nvidia-arch/actions/workflows/build.yaml/badge.svg)](https://github.com/rathaROG/nvidia-arch/actions/workflows/build.yaml)
 [![Publish](https://github.com/rathaROG/nvidia-arch/actions/workflows/publish.yaml/badge.svg)](https://github.com/rathaROG/nvidia-arch/actions/workflows/publish.yaml)
 
-![cover](https://raw.githubusercontent.com/rathaROG/nvidia-arch/refs/heads/main/assets/nvidia-arch.jpg)
+[![cover](https://raw.githubusercontent.com/rathaROG/nvidia-arch/refs/heads/main/assets/nvidia-arch.jpg)](https://github.com/rathaROG/nvidia-arch/blob/main/NVIDIA-ARCH.md)
 
 ***“ `nvidia-arch` removes the guesswork and keeps your CUDA builds future‑proof and reproducible. ”***
+
+✅ All info has been verified by the [***Explorer***](https://github.com/rathaROG/nvidia-arch/actions/workflows/explorer.yaml) 🤖
 
 ---
 
