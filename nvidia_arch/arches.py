@@ -57,8 +57,9 @@ CUDA_FILTERS_RANGES = {
 # Arches to exclude for each CUDA version (those that are valid but not supported by that CUDA version)
 CUDA_EXCLUDES = {
     (11.8, 12.9): [88],   # mysterious, only in cuda 13.0 or later
-    (12.8, 12.8): [103],  # only in cuda 12.9 or later
     (13.0, 13.2): [101],  # only in cuda 12.8 and 12.9
+    (12.8, 12.8): [103],  # only in cuda 12.9 or later
+    (12.8, 12.9): [110],  # only in cuda 13.0 or later
 }
 """dict: Mapping CUDA version ranges to lists of valid but unsupported SM codes."""
 
