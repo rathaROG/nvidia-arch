@@ -7,9 +7,9 @@ Definitions and filters for NVIDIA GPU architecture codes (SM/Compute).
 Supports all major CUDA/SM combinations for both consumer and Jetson GPUs.
 """
 
-# All arches from 35 (CUDA 11.0+)
+# All arches from 30 (CUDA 11.0+)
 ALL_ARCHS = [
-    "35", "37", "50", "52", "53",
+    "30", "32", "35", "37", "50", "52", "53",
     "60", "61", "62",
     "70", "72", "75",
     "80", "86", "87", "88", "89",
@@ -21,11 +21,11 @@ ALL_ARCHS = [
 """list of str: All supported architecture codes."""
 
 # All arches for Consumer/Workstation GPUs (CUDA 11.0+)
-ALL_ARCHS_CONS = ["35", "50", "52", "60", "61", "70", "75", "86", "89", "120", "121"]
+ALL_ARCHS_CONS = ["30", "35", "50", "52", "60", "61", "70", "75", "86", "89", "120", "121"]
 """list of str: Consumer/Workstation GPU architectures."""
 
 # All arches for Jetson (CUDA 11.0+)
-ALL_ARCHS_JETS = ["53", "62", "72", "87", "110"]
+ALL_ARCHS_JETS = ["32", "53", "62", "72", "87", "110"]
 """list of str: Jetson/embedded GPU architectures."""
 
 # All arches for Consumer/Workstation GPUs + Jetson
@@ -43,9 +43,9 @@ TYPE_FILTERS = {
 
 # Arch filter ranges for different CUDA versions, mapping CUDA(START, END) to ARCH(MIN, MAX)
 CUDA_FILTERS_RANGES = {
-    (11.0, 11.0): (35, 80),
-    (11.1, 11.4): (35, 86),
-    (11.5, 11.7): (35, 87),
+    (11.0, 11.0): (30, 80),
+    (11.1, 11.3): (35, 86),
+    (11.4, 11.7): (35, 87),
     (11.8, 11.8): (35, 90),
     (12.0, 12.6): (50, 90),
     (12.8, 12.8): (50, 120),
