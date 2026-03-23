@@ -26,12 +26,13 @@
 | 11.5 – 11.7     | 3.5 – 8.7                      |
 | 11.8            | 3.5 – 9.0                      |
 | 12.0 – 12.6     | 5.0 – 9.0                      |
-| 12.8 ¹          | 5.0 – 12.0                     |
+| 12.8            | 5.0 – 12.0                     |
 | 12.9            | 5.0 – 12.1                     |
-| 13.0 ² – 13.2 ² | 7.5 – 12.1                     |
+| 13.0 – 13.2     | 7.5 – 12.1                     |
 
-<sup>¹ CUDA 12.8 does not include arch/compute 10.3 even though it already supports arch/compute 12.0. </sup><br>
-<sup>² CUDA 13.x includes a mysterious arch/compute 8.8 which is not documented or explained anywhere, see: [mysterious-88.png](https://github.com/rathaROG/nvidia-arch/blob/main/assets/mysterious-88.png). </sup><br>
+<sup>1. CUDA 12.8 does not include arch/compute 10.3 even though it already supports arch/compute 12.0. </sup><br>
+<sup>2. CUDA 12.8 and 12.9 are the only versions that support arch/compute 10.1. </sup><br>
+<sup>3. CUDA 13.x includes a mysterious arch/compute 8.8 which is not documented or explained anywhere, see: [mysterious-88.png](https://github.com/rathaROG/nvidia-arch/blob/main/assets/mysterious-88.png). </sup><br>
 
 ---
 
