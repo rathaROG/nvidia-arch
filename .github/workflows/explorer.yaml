@@ -8,6 +8,7 @@ jobs:
     name: CUDA 11.x
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         cuda_version:
           - "11.0.3"
@@ -33,13 +34,23 @@ jobs:
           docker run --rm \
             -v "$(pwd)":/io \
             nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu20.04 \
-            bash -c "
-              if command -v nvcc; then
-                nvcc --list-gpu-arch > /io/tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
-              else
-                echo 'nvcc not found' > /io/tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+            bash -c '
+              OUT="/io/tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt"
+              # Ensure directory exists
+              mkdir -p /io/tools
+              if ! command -v nvcc >/dev/null 2>&1; then
+                echo "nvcc not found" > "$OUT"
+                exit 0
               fi
-            "
+              # Check if nvcc supports --list-gpu-arch
+              if nvcc --help 2>&1 | grep -q -- "--list-gpu-arch"; then
+                nvcc --list-gpu-arch > "$OUT" 2>&1
+              else
+                echo "Parsed from nvcc --help:" > "$OUT"
+                nvcc --help | grep -o "sm_[0-9]\+" | sort -u | tr "\n" " " >> "$OUT"
+                echo >> "$OUT"
+              fi
+            '
           cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
       - name: Run extract_cuda_arch_info.py using mounted /io
         run: |
@@ -65,6 +76,7 @@ jobs:
     name: CUDA 12.x
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         cuda_version:
           - "12.0.1"
@@ -120,6 +132,7 @@ jobs:
     name: CUDA 13.x
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         cuda_version:
           - "13.0.2"
