@@ -1,0 +1,170 @@
+name: Explore
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cuda-arch-11x:
+    name: CUDA 11.x
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cuda_version:
+          - "11.0.3"
+          - "11.1.1"
+          - "11.4.3"
+          - "11.5.2"
+          - "11.7.1"
+          - "11.8.0"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/local/share/chromium
+          docker system prune -af
+      - name: Pull CUDA docker image ${{ matrix.cuda_version }}
+        run: docker pull nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu20.04
+      - name: Save nvcc --list-gpu-arch output to file
+        run: |
+          docker run --rm \
+            -v "$(pwd)":/io \
+            nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu20.04 \
+            bash -c "
+              if command -v nvcc; then
+                nvcc --list-gpu-arch > /io/tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+              else
+                echo 'nvcc not found' > /io/tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+              fi
+            "
+          cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+      - name: Run extract_cuda_arch_info.py using mounted /io
+        run: |
+          docker run --rm \
+            -v "$(pwd)":/io \
+            nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu20.04 \
+            bash -c "\
+              apt-get update && apt-get install -y python3-pip && \
+              pip3 install nvidia-arch && \
+              cd /io/tools && \
+              python3 extract_cuda_arch_info.py
+            "
+          ls tools/info-cuda-*.json
+      - name: Upload results as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: cuda-11x-architectures
+          path: |
+            tools/nvcc-arch-cuda-*.txt
+            tools/info-cuda-*.json
+
+  cuda-arch-12x:
+    name: CUDA 12.x
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cuda_version:
+          - "12.0.1"
+          - "12.6.3"
+          - "12.8.1"
+          - "12.9.1"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/local/share/chromium
+          docker system prune -af
+      - name: Pull CUDA docker image ${{ matrix.cuda_version }}
+        run: docker pull nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04
+      - name: Save nvcc --list-gpu-arch output to file
+        run: |
+          docker run --rm \
+            -v "$(pwd)":/io \
+            nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04 \
+            bash -c "
+              if command -v nvcc; then
+                nvcc --list-gpu-arch > /io/tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+              else
+                echo 'nvcc not found' > /io/tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+              fi
+            "
+          cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+      - name: Run extract_cuda_arch_info.py using mounted /io
+        run: |
+          docker run --rm \
+            -v "$(pwd)":/io \
+            nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04 \
+            bash -c "\
+              apt-get update && apt-get install -y python3-pip && \
+              pip3 install nvidia-arch && \
+              cd /io/tools && \
+              python3 extract_cuda_arch_info.py
+            "
+          ls tools/info-cuda-*.json
+      - name: Upload results as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: cuda-12x-architectures
+          path: |
+            tools/nvcc-arch-cuda-*.txt
+            tools/info-cuda-*.json
+
+  cuda-arch-13x:
+    name: CUDA 13.x
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cuda_version:
+          - "13.0.2"
+          - "13.2.0"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/local/share/chromium
+          docker system prune -af
+      - name: Pull CUDA docker image ${{ matrix.cuda_version }}
+        run: docker pull nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04
+      - name: Save nvcc --list-gpu-arch output to file
+        run: |
+          docker run --rm \
+            -v "$(pwd)":/io \
+            nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04 \
+            bash -c "
+              if command -v nvcc; then
+                nvcc --list-gpu-arch > /io/tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+              else
+                echo 'nvcc not found' > /io/tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+              fi
+            "
+          cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
+      - name: Run extract_cuda_arch_info.py using mounted /io
+        run: |
+          docker run --rm \
+            -v "$(pwd)":/io \
+            nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04 \
+            bash -c "\
+              apt-get update && apt-get install -y python3-pip && \
+              pip3 install nvidia-arch && \
+              cd /io/tools && \
+              python3 extract_cuda_arch_info.py
+            "
+          ls tools/info-cuda-*.json
+      - name: Upload results as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: cuda-13x-architectures
+          path: |
+            tools/nvcc-arch-cuda-*.txt
+            tools/info-cuda-*.json
