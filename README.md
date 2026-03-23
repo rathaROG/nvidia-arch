@@ -1,8 +1,10 @@
 <div align="center">
 
-![cover](https://raw.githubusercontent.com/rathaROG/nvidia-arch/refs/heads/main/assets/nvidia-arch.jpg)
+[![cover](https://raw.githubusercontent.com/rathaROG/nvidia-arch/refs/heads/main/assets/nvidia-arch.jpg)](https://github.com/rathaROG/nvidia-arch/blob/main/NVIDIA-ARCH.md)
 
 **~~JUST A NOTE~~ 👉 A NOTE & A PACKAGE [`nvidia-arch`](https://github.com/rathaROG/nvidia-arch/blob/main/NVIDIA-ARCH.md)**
+
+✅ All info has been verified by the [***Explorer***](https://github.com/rathaROG/nvidia-arch/actions/workflows/explorer.yaml) ☑️
 
 ***Updated on 2026-03-23***
 
@@ -10,14 +12,7 @@
 
 ---
 
-### 🆕 Must read for CUDA 13 🔥
-
-- [Important changes](https://developer.nvidia.com/blog/whats-new-and-important-in-cuda-toolkit-13-0/#wheel_package_changes_to_cuda_130)
-- [Migration guide](https://nvidia.github.io/cccl/unstable/cccl/3.0_migration_guide.html)
-
----
-
-### CUDA versions and supported compute capabilities
+### CUDA versions and supported compute capabilities:
 
 | CUDA Version    | Supported Compute Capabilities     |
 |-----------------|------------------------------------|
@@ -37,7 +32,7 @@
 
 ---
 
-### Compute / Architectures
+### Compute / Architectures:
 
 ```python
 # All archs from 30
@@ -110,6 +105,13 @@ compute_90
 
 ---
 
+### 🆕 Must read for CUDA 13 🔥
+
+- [Important changes](https://developer.nvidia.com/blog/whats-new-and-important-in-cuda-toolkit-13-0/#wheel_package_changes_to_cuda_130)
+- [Migration guide](https://nvidia.github.io/cccl/unstable/cccl/3.0_migration_guide.html)
+
+---
+
 ### Other useful links:
 
 - GPU Compute Capability - [Official NVIDIA](https://developer.nvidia.com/cuda/gpus)
@@ -118,4 +120,4 @@ compute_90
 - cuDNN Archive - [Official NVIDIA](https://developer.nvidia.com/cudnn-archive)
 - cuDNN Tarbal (Zip) - [Official NVIDIA](https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/)
 - Compilation - [Official NVIDIA](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/#gpu-compilation)
-- CUDA - [Wikipedia](https://en.wikipedia.org/wiki/CUDA)
+- CUDA - [Wikipedia](https://en.wikipedia.org/wiki/CUDA) (Some info there is not accurate)
