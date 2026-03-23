@@ -334,17 +334,33 @@ def nvcc_list_arches() -> Optional[List[str]]:
     list of str or None
         List of SM version codes as strings, or None if unavailable.
     """
+    # Try modern CUDA API first (CUDA 11.2+)
     try:
-        out = subprocess.check_output(["nvcc", "--list-gpu-arch"]).decode("utf-8")
-        if "sm_" in out:
-            arches = re.findall(r"sm_(\d+)", out)
-        elif "compute_" in out:
-            arches = re.findall(r"compute_(\d+)", out)
-        else:
-            return None
-        return sorted(set(arches))
+        out = subprocess.check_output(
+            ["nvcc", "--list-gpu-arch"],
+            stderr=subprocess.STDOUT
+        ).decode("utf-8")
+
+        arches = re.findall(r"sm_(\d+)", out) or re.findall(r"compute_(\d+)", out)
+        if arches:
+            return sorted(set(arches))
     except Exception:
-        return None
+        pass  # Old CUDA → fallback
+
+    # Fallback for CUDA 11.0 / 11.1 and older
+    try:
+        help_out = subprocess.check_output(
+            ["nvcc", "--help"],
+            stderr=subprocess.STDOUT
+        ).decode("utf-8")
+
+        arches = re.findall(r"sm_(\d+)", help_out)
+        if arches:
+            return sorted(set(arches))
+    except Exception:
+        pass
+
+    return None
 
 
 def _sm_to_cc(sm: Union[str, int]) -> str:
