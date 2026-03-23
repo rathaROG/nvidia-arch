@@ -28,6 +28,30 @@ def test_arch_88():
     print("test_arch_88 passed successfully for all CUDA versions.")
 
 
+def test_arch_101():
+    """
+    Test get_architectures function to see if it correctly lists the correct architectures.
+    Architecture 101 or 10.1 is only available in CUDA 12.8 and 12.9.
+    """
+    for cuda_ver in CUDA_VERSIONS_FLOAT:
+
+        # cc_string mode
+        arches = na.get_architectures(cuda_ver=cuda_ver, return_mode='cc_string')
+        if cuda_ver not in [12.8, 12.9] and '10.1' in arches:
+            raise AssertionError(f"CUDA {cuda_ver} should not support architecture 10.1, but it is listed in {arches}")
+        if cuda_ver in [12.8, 12.9] and '10.1' not in arches:
+            raise AssertionError(f"CUDA {cuda_ver} should support architecture 10.1, but it is not listed in {arches}")
+        
+        # sm_list mode
+        arches = na.get_architectures(cuda_ver=cuda_ver, return_mode='sm_list')
+        if cuda_ver not in [12.8, 12.9] and '101' in arches:
+            raise AssertionError(f"CUDA {cuda_ver} should not support architecture 101, but it is listed in {arches}")
+        if cuda_ver in [12.8, 12.9] and '101' not in arches:
+            raise AssertionError(f"CUDA {cuda_ver} should support architecture 101, but it is not listed in {arches}")
+
+    print("test_arch_101 passed successfully for all CUDA versions.")
+
+
 def test_arch_103():
     """
     Test get_architectures function to see if it correctly lists the correct architectures.
@@ -55,4 +79,5 @@ def test_arch_103():
 
 if __name__ == "__main__":
     test_arch_88()
+    test_arch_101()
     test_arch_103()
