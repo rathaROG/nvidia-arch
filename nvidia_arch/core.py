@@ -561,7 +561,7 @@ def get_architectures(
 
     cuda_ver_norm = normalize_cuda_ver(cuda_ver)
 
-    # Step 2: Lookup arches by CUDA version (from filter); else detect
+    # Lookup arches by CUDA version (from filter); else detect
     if cuda_ver_norm is not None:
         if cuda_ver_norm not in CUDA_FILTERS:
             msg = f"Unsupported CUDA version: {cuda_ver_norm}"
@@ -584,7 +584,7 @@ def get_architectures(
                 return []
             sm_list = CUDA_FILTERS[detected][:]
 
-    # Step 3: Filter by GPU type (using TYPE_FILTERS)
+    # Filter by GPU type (using TYPE_FILTERS)
     if gpu_type not in TYPE_FILTERS:
         msg = f"Unknown gpu_type '{gpu_type}'. Valid: {list(TYPE_FILTERS.keys())}"
         if raise_on_error:
@@ -592,14 +592,14 @@ def get_architectures(
         print(msg)
         return []
 
-    # Step 4: Filter the SM list based on GPU type and minimum SM
+    # Filter the SM list based on GPU type and minimum SM
     allowed = set(TYPE_FILTERS[gpu_type])
     filtered = [sm for sm in sm_list if sm in allowed]
     if min_sm is not None:
         min_sm = int(min_sm)
         filtered = [sm for sm in filtered if int(sm) >= min_sm]
 
-    # Step 5: Output format + PTX
+    # Output format + PTX
     filtered = sorted(filtered, key=int)
     if add_ptx and filtered:
         filtered[-1] = filtered[-1] + "+PTX"
