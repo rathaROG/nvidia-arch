@@ -334,7 +334,7 @@ def nvcc_list_arches() -> Optional[List[str]]:
     list of str or None
         List of SM version codes as strings, or None if unavailable.
     """
-    # Try modern CUDA API first (CUDA 11.2+)
+    # Try modern CUDA API first (CUDA 11.1+)
     try:
         out = subprocess.check_output(
             ["nvcc", "--list-gpu-arch"],
@@ -347,7 +347,7 @@ def nvcc_list_arches() -> Optional[List[str]]:
     except Exception:
         pass  # Old CUDA → fallback
 
-    # Fallback for CUDA 11.0 / 11.1 and older
+    # Fallback for CUDA 11.0 and older
     try:
         help_out = subprocess.check_output(
             ["nvcc", "--help"],
