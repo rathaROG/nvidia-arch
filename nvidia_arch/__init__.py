@@ -40,7 +40,7 @@ from .core import (
     validate_cc_string,
 )
 
-__all__ = [
+__all__: list = [
     # Constants
     "ALL_ARCHS",
     "ALL_ARCHS_CONS",
