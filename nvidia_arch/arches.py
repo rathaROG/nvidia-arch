@@ -25,7 +25,7 @@ ALL_ARCHS_CONS = ["30", "35", "50", "52", "60", "61", "70", "75", "86", "89", "1
 """list of str: Consumer/Workstation GPU architectures."""
 
 # All arches for Jetson (CUDA 11.0+)
-ALL_ARCHS_JETS = ["32", "53", "62", "72", "87", "110"]
+ALL_ARCHS_JETS = ["32", "53", "62", "72", "87", "101", "110"]
 """list of str: Jetson/embedded GPU architectures."""
 
 # All arches for Consumer/Workstation + Jetson
