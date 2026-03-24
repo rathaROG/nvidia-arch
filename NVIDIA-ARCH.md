@@ -285,6 +285,17 @@ make_gencode_flags(arches, add_ptx=True)
 
 See a real example in [BEVFusionx](https://github.com/rathaumons/bevfusionx/blob/main/setup.py).
 
+## Deprecation
+
+**The following legacy function names are deprecated and will be removed in version 7.0.0:**
+
+- `find_gpu()` → use `find_gpus()` instead  
+- `get_compute_cap()` → use `get_compute_caps()` instead  
+- `get_architectures()` → use `get_arches()` instead  
+- `validate_cc_string()` → use `validate_arch_string()` instead  
+
+You can continue using the old names until v7.0.0, but all new code and documentation now use the new, more Pythonic API. Importing or calling any deprecated function will issue a `DeprecationWarning`.
+
 ## 📝 License
 
 [![LICENSE](https://img.shields.io/badge/LICENSE-Apache_2.0-blue)](https://github.com/rathaROG/nvidia-arch/blob/main/LICENSE)
