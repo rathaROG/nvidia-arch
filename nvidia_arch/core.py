@@ -503,7 +503,7 @@ def validate_cc_string(
     return ';'.join(clean_items)
 
 
-def get_architectures(
+def get_arches(
     gpu_type: str = "all",
     cuda_ver: Optional[Union[str, float, int]] = None,
     min_sm: Optional[Union[str, int]] = None,
@@ -523,12 +523,13 @@ def get_architectures(
 
     Parameters
     ----------
-    gpu_type : {'all', 'cons', 'jets', 'cons+jets'}, optional
+    gpu_type : {'all', 'cons', 'jets', 'dcen', 'cons+jets'}, optional
         Selects which GPU families to include:
-        - 'all'         : all supported architectures (default)
-        - 'cons'        : consumer/workstation GPUs only
+        - 'all'         : All supported architectures (default)
+        - 'cons'        : Consumer/Workstation GPUs only
         - 'jets'        : Jetson/embedded GPUs only
-        - 'cons+jets'   : union of consumer/workstation and Jetson GPUs
+        - 'dcen'        : Datacenter GPUs only
+        - 'cons+jets'   : Union of consumer/workstation and Jetson GPUs
     cuda_ver : str, float, int or None, optional
         CUDA version to use when determining supported architectures.
         If None (default), will auto-detect from installed CTK.
@@ -615,6 +616,76 @@ def get_architectures(
             raise ValueError(msg)
         print(msg)
         return []
+
+
+def get_architectures(
+    gpu_type: str = "all",
+    cuda_ver: Optional[Union[str, float, int]] = None,
+    min_sm: Optional[Union[str, int]] = None,
+    return_mode: str = "sm_list",
+    add_ptx: bool = False,
+    raise_on_error: bool = False
+) -> Union[List[str], str]:
+    """
+    Return the list of GPU architectures (SM versions) supported by the installed
+    CUDA Toolkit (CTK) or a manually specified CUDA version.
+
+    PTX emission policy:
+    --------------------
+    If add_ptx=True, PTX is added **only for the highest SM architecture** in the
+    filtered/validated list. This follows NVIDIA best practices and matches the
+    strategy used by PyTorch, TensorFlow, and official CUDA wheels.
+
+    Parameters
+    ----------
+    gpu_type : {'all', 'cons', 'jets', 'dcen', 'cons+jets'}, optional
+        Selects which GPU families to include:
+        - 'all'         : All supported architectures (default)
+        - 'cons'        : Consumer/Workstation GPUs only
+        - 'jets'        : Jetson/embedded GPUs only
+        - 'dcen'        : Datacenter GPUs only
+        - 'cons+jets'   : Union of consumer/workstation and Jetson GPUs
+    cuda_ver : str, float, int or None, optional
+        CUDA version to use when determining supported architectures.
+        If None (default), will auto-detect from installed CTK.
+    min_sm : str, int, or None, optional
+        Minimum SM number (e.g., 60), filtering to those >= min_sm.
+    return_mode : {'sm_list', 'cc_list', 'cc_string'}, optional
+        Output type:
+        - 'sm_list': list of SM codes as strings ['75', '86', ...]
+        - 'cc_list': list of compute capability strings ['7.5', ...]
+        - 'cc_string': semicolon-delimited string, e.g. '7.5;8.6'
+    add_ptx : bool, optional
+        If True, include PTX for the highest SM architecture.
+    raise_on_error : bool, optional
+        If True, raise exceptions on invalid versions/gpu_type; else print warning and return [].
+
+    Returns
+    -------
+    list of str or str
+        Available architectures in the chosen mode.
+
+    Raises
+    ------
+    RuntimeError
+        If CUDA version cannot be detected (with raise_on_error True).
+    ValueError
+        If unknown gpu_type or return_mode (with raise_on_error True).
+    """
+    import warnings
+    warnings.warn(
+        "Function `get_architectures()` is deprecated and will be removed starting from 7.0.0. Use `get_arches()` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return get_arches(
+        gpu_type=gpu_type,
+        cuda_ver=cuda_ver,
+        min_sm=min_sm,
+        return_mode=return_mode,
+        add_ptx=add_ptx,
+        raise_on_error=raise_on_error,
+    )
 
 
 def make_gencode_flags(
