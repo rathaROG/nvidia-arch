@@ -7,12 +7,13 @@ A lightweight tool for detecting and querying NVIDIA GPU architectures (SM/CC),
 and generating `-gencode` flags for CUDA builds
 """
 
-__version__ = '5.0.0'
+__version__ = '6.0.0'
 
 from .arches import (
     ALL_ARCHS,
     ALL_ARCHS_CONS,
     ALL_ARCHS_JETS,
+    ALL_ARCHS_DCEN,
     ALL_ARCHS_CONS_JETS,
     TYPE_FILTERS,
     CUDA_FILTERS_RANGES,
@@ -21,33 +22,47 @@ from .arches import (
 )
 
 from .core import (
-    find_gpu,    
+    # new API names:
+    find_gpus,
+    get_arches,
+    get_compute_caps,
+    validate_arch_string,
+    # Other utilities (unchanged):
     detect_ctk,
     normalize_cuda_ver,
     nvcc_list_arches,
+    make_gencode_flags,
+    print_summary,
+    # Aliases: Deprecated, to be removed in 7.0.0
+    find_gpu,
     get_architectures,
     get_compute_cap,
     validate_cc_string,
-    make_gencode_flags,
-    print_summary,
 )
 
-__all__: list = [
+__all__ = [
+    # Constants
     "ALL_ARCHS",
     "ALL_ARCHS_CONS",
     "ALL_ARCHS_JETS",
+    "ALL_ARCHS_DCEN",
     "ALL_ARCHS_CONS_JETS",
     "TYPE_FILTERS",
     "CUDA_FILTERS_RANGES",
     "CUDA_FILTERS",
     "CUDA_EXCLUDES",
-    "find_gpu",
+    # Main functions
+    "find_gpus",              # New API name
+    "get_arches",             # New API name
+    "get_compute_caps",       # New API name
+    "validate_arch_string",   # New API name
     "detect_ctk",
     "normalize_cuda_ver",
     "nvcc_list_arches",
-    "get_architectures",
-    "get_compute_cap",
-    "validate_cc_string",
     "make_gencode_flags",
     "print_summary",
+    "find_gpu",               # Alias: Deprecated, to be removed in 7.0.0
+    "get_architectures",      # Alias: Deprecated, to be removed in 7.0.0
+    "get_compute_cap",        # Alias: Deprecated, to be removed in 7.0.0
+    "validate_cc_string",     # Alias: Deprecated, to be removed in 7.0.0
 ]
