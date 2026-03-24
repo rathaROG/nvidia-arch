@@ -25,7 +25,6 @@ def test_get_arches_cons_jets():
     assert isinstance(result, list)
     result = get_arches(gpu_type='cons+jets', cuda_ver='13.2', min_sm=75, return_mode='sm_list', add_ptx=True)
     assert isinstance(result, list)
-)
 
 def test_get_arches_make_gencode_flags():
     from nvidia_arch import get_arches, make_gencode_flags
