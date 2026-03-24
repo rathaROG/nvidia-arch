@@ -29,8 +29,12 @@ ALL_ARCHS_JETS = ["32", "53", "62", "72", "87", "110"]
 """list of str: Jetson/embedded GPU architectures."""
 
 # All arches for Consumer/Workstation GPUs + Jetson
-ALL_ARCHS_CONS_JETS = sorted(set(ALL_ARCHS_CONS + ALL_ARCHS_JETS))
+ALL_ARCHS_CONS_JETS = sorted(set(ALL_ARCHS_CONS + ALL_ARCHS_JETS), key=lambda x: int(x))
 """list of str: Union of Consumer/Workstation and Jetson architectures."""
+
+# All arches for Datacenter GPUs only
+ALL_ARCHS_DC = sorted(set(ALL_ARCHS) - set(ALL_ARCHS_JETS) - {"50", "88", "121"}, key=lambda x: int(x))
+"""list of str: Datacenter GPU architectures."""
 
 # Arch filters for different GPU types
 TYPE_FILTERS = {
