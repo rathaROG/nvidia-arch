@@ -3,7 +3,7 @@ import nvidia_arch as na
 
 def extract_info():
     cuda_info = na.detect_ctk()
-    cuda_info['architectures'] = na.get_architectures()
+    cuda_info['architectures'] = na.get_arches()
     version = cuda_info.get("version", "unknown")
     filename = f"info-cuda-{version}.json"
     
