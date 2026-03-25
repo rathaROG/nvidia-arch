@@ -24,6 +24,93 @@ def normalize_arch_string(arch_str: str) -> str:
     return ';'.join(filter(None, ARCH_SPLIT_RE.split(arch_str.strip())))
 
 
+def normalize_arches(
+    input_arches: Union[List[str], str],
+    exclude: Union[List[str], str, None] = None,
+    return_mode: str = "sm_list"
+) -> Union[List[str], str]:
+    """
+    Remove entries from input_arches that match exclude, supporting list/cc_string and all modes.
+
+    Parameters
+    ----------
+    input_arches: list[str] or str
+        The architectures to filter, as list or cc_string, all modes supported.
+    exclude: list[str] or str or None
+        Architectures to remove, any input style, all modes supported.
+    return_mode : {'sm_list', 'cc_list', 'cc_string'}, optional
+        Output type:
+        - 'sm_list': list of SM codes as strings ['75', '86', ...]
+        - 'cc_list': list of compute capability strings ['7.5', ...]
+        - 'cc_string': semicolon-delimited string, e.g. '7.5;8.6'
+
+    Returns
+    -------
+    List[str] or str
+        Filtered architectures in requested output format.
+
+    Examples
+    --------
+    normalize_arches(['75', '86', '89+PTX'], return_mode='cc_list') -> ['7.5', '8.6', '8.9+PTX']
+    normalize_arches('7.5;8.6+PTX;8.9', return_mode='sm_list', exclude='8.6') -> ['75', '89']
+    normalize_arches(['75', '86', '89+PTX'], '8.6', return_mode='sm_list') -> ['75', '89+PTX']
+    normalize_arches(['8.6', '8.9+PTX', '12.1'], return_mode='cc_string', exclude=['8.9', '12.1']) -> '8.6'
+    normalize_arches('7.5 8.6 8.9+PTX', ['8.6', '8.9'], return_mode='cc_string') -> '7.5'
+    """
+
+    if isinstance(input_arches, str):
+        items = [s.strip() for s in normalize_arch_string(input_arches).split(';') if s.strip()]
+    else:
+        items = []
+        for x in input_arches:
+            if isinstance(x, str) and ';' in x:
+                items += [s.strip() for s in normalize_arch_string(x).split(';') if s.strip()]
+            else:
+                items.append(str(x).strip())
+
+    def expand_excl(e):
+        if e is None:
+            return set(), set()
+        if isinstance(e, str):
+            e = [s.strip() for s in normalize_arch_string(e).split(';') if s.strip()]
+        ex_sm = set()
+        ex_cc = set()
+        for v in e:
+            clean = v.upper().replace('+PTX', '').replace('SM_', '').replace('CC_', '').strip()
+            if '.' in clean:
+                ex_cc.add(clean)
+                sm = clean.replace('.', '')
+                ex_sm.add(sm)
+            elif clean.isdigit():
+                ex_sm.add(clean)
+                ex_cc.add(f"{int(clean)//10}.{int(clean)%10}")
+        return ex_sm, ex_cc
+
+    excl_sm, excl_cc = expand_excl(exclude)
+
+    keep = []
+    for entry in items:
+        base = entry.upper().replace('+PTX', '').replace('SM_', '').replace('CC_', '').strip()
+        if '.' in base:
+            sm_form = base.replace('.', '')
+            cc_form = base
+        else:
+            sm_form = base
+            cc_form = f"{int(base)//10}.{int(base)%10}" if base.isdigit() else base
+        if sm_form in excl_sm or cc_form in excl_cc:
+            continue
+        keep.append(entry)
+
+    if return_mode == 'sm_list':
+        return [k for k in keep]
+    elif return_mode == 'cc_list':
+        return [_sm_to_cc(k) if k.isdigit() or (k[:-4].isdigit() and k.upper().endswith('+PTX')) else k for k in keep]
+    elif return_mode == 'cc_string':
+        return ';'.join([_sm_to_cc(k) if k.isdigit() or (k[:-4].isdigit() and k.upper().endswith('+PTX')) else k for k in keep])
+    else:
+        raise ValueError(f"Unsupported return_mode: {return_mode}")
+
+
 def _run_nvidia_smi(query_args: str) -> Optional[str]:
     """
     Internal helper to run nvidia-smi with specified query arguments and return decoded output.
