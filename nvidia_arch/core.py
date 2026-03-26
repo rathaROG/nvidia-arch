@@ -24,6 +24,78 @@ def normalize_arch_string(arch_str: str) -> str:
     return ';'.join(filter(None, ARCH_SPLIT_RE.split(arch_str.strip())))
 
 
+def _sm_to_cc(sm: Union[str, int]) -> str:
+    """
+    Convert an SM string (optionally with suffixes like '+PTX') into 
+    a compute capability string, preserving all suffixes.
+
+    Examples:
+        '89'            -> '8.9'
+        '89+PTX'        -> '8.9+PTX'
+        '89+PTX+DEBUG'  -> '8.9+PTX+DEBUG'
+
+    Parameters
+    ----------
+    sm : str or int
+        Streaming multiprocessor (SM) version code, e.g. '75'.
+
+    Returns
+    -------
+    str
+        Compute capability string, e.g. '7.5'.
+    """
+    sm_str = str(sm).strip()
+    i = 0
+    while i < len(sm_str) and sm_str[i].isdigit():
+        i += 1
+    if i == 0:
+        raise ValueError(f"Invalid SM string (no numeric prefix): '{sm}'")
+    numeric = sm_str[:i]
+    suffix = sm_str[i:]
+    sm_int = int(numeric)
+    cc = f"{sm_int // 10}.{sm_int % 10}"
+    return cc + suffix
+
+
+def _cc_to_sm(cc: Union[str, int]) -> str:
+    """
+    Convert a compute capability string (optionally with suffixes like '+PTX') to an SM string, preserving all suffixes.
+
+    Examples:
+        '8.9'         -> '89'
+        '8.9+PTX'     -> '89+PTX'
+        '8.9+PTX+DBG' -> '89+PTX+DBG'
+
+    Parameters
+    ----------
+    cc : str or int
+        Compute capability string, e.g. '8.6', or cc+PTX, or int.
+
+    Returns
+    -------
+    str
+        SM code as string, e.g. '86'.
+    """
+    cc_str = str(cc).strip()
+    # Separate out '+PTX' and other non-numeric suffixes
+    if '+' in cc_str:
+        base, suffix = cc_str.split('+', 1)
+        suffix = '+' + suffix
+    else:
+        base, suffix = cc_str, ''
+    base = base.strip()
+    if '.' in base:
+        major, minor = base.split('.', 1)
+        if not (major.isdigit() and minor.isdigit()):
+            raise ValueError(f"Invalid CC string: '{cc}'")
+        sm = f"{int(major)}{int(minor)}{suffix}"
+        return sm
+    elif base.isdigit():
+        return f"{base}{suffix}"
+    else:
+        raise ValueError(f"Invalid CC string: '{cc}'")
+
+
 def normalize_arches(
     input_arches: Union[List[str], str],
     exclude: Union[List[str], str, None] = None,
@@ -102,7 +174,7 @@ def normalize_arches(
         keep.append(entry)
 
     if return_mode == 'sm_list':
-        return [k for k in keep]
+        return [_cc_to_sm(k) if ('.' in k) else k for k in keep]
     elif return_mode == 'cc_list':
         return [_sm_to_cc(k) if k.isdigit() or (k[:-4].isdigit() and k.upper().endswith('+PTX')) else k for k in keep]
     elif return_mode == 'cc_string':
@@ -485,39 +557,6 @@ def nvcc_list_arches() -> Optional[List[str]]:
     return None
 
 
-def _sm_to_cc(sm: Union[str, int]) -> str:
-    """
-    Convert an SM string (optionally with suffixes like '+PTX') into 
-    a compute capability string, preserving all suffixes.
-
-    Examples:
-        '89'            -> '8.9'
-        '89+PTX'        -> '8.9+PTX'
-        '89+PTX+DEBUG'  -> '8.9+PTX+DEBUG'
-
-    Parameters
-    ----------
-    sm : str or int
-        Streaming multiprocessor (SM) version code, e.g. '75'.
-
-    Returns
-    -------
-    str
-        Compute capability string, e.g. '7.5'.
-    """
-    sm_str = str(sm).strip()
-    i = 0
-    while i < len(sm_str) and sm_str[i].isdigit():
-        i += 1
-    if i == 0:
-        raise ValueError(f"Invalid SM string (no numeric prefix): '{sm}'")
-    numeric = sm_str[:i]
-    suffix = sm_str[i:]
-    sm_int = int(numeric)
-    cc = f"{sm_int // 10}.{sm_int % 10}"
-    return cc + suffix
-
-
 def validate_arch_string(
     cc_string: str,
     named_arches: Optional[Dict[str, str]] = None,
@@ -827,11 +866,10 @@ def make_gencode_flags(
         wants_ptx = bool(PTX_SUFFIX_RE.search(item))
         clean = PTX_SUFFIX_RE.sub("", item).strip()
         # Parse numeric part
-        if clean.isdigit() and len(clean) in (2, 3):
+        if "." in clean:
+            sm = _cc_to_sm(clean)
+        elif clean.isdigit() and len(clean) in (2, 3):
             sm = clean
-        elif "." in clean:
-            major, minor = clean.split(".")
-            sm = f"{int(major) * 10 + int(minor)}"
         else:
             raise ValueError(f"Unrecognized architecture string: '{item}'")
         # Apply min_sm filter
