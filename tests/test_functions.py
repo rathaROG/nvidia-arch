@@ -1,5 +1,5 @@
 import pytest
-from nvidia_arch import get_arches, make_gencode_flags, validate_arch_string, print_summary, detect_ctk, find_gpus, normalize_arches
+from nvidia_arch import get_arches, make_gencode_flags, validate_arch_string, print_summary, detect_ctk, find_gpus, normalize_arches, normalize_cuda_ver
 
 # ---- Utility & integration tests ----
 
@@ -94,3 +94,53 @@ def test_validate_arch_string_exception():
 def test_normalize_arches(input_arches, exclude, return_mode, expected):
     result = normalize_arches(input_arches, exclude, return_mode)
     assert result == expected
+
+# ---- normalize_cuda_ver tests ----
+
+@pytest.mark.parametrize("inp,force_full_minor,expected", [
+    # Basic numerics
+    (12, False, "12.0"),
+    (12, True, "12.0"),
+    (12.1, False, "12.1"),
+    (12.19, False, "12.1"),
+    (12.19, True, "12.19"),
+    (12.199, True, "12.199"),
+    (13.01, False, "13.0"),
+    (13.01, True, "13.1"),
+    ("12.199", False, "12.1"),
+    ("12.199", True, "12.199"),
+    # Strings
+    ("13", False, "13.0"),
+    ("13", True, "13.0"),
+    ("13.11", False, "13.1"),
+    ("13.11", True, "13.11"),
+    ("  13.19  ", False, "13.1"),
+    ("  13.19  ", True, "13.19"),
+    ("12.0.5", False, "12.0"),  # Patch ignored
+    ("12.0.5", True, "12.0"),
+    ("13.", False, "13.0"),     # Trailing dot
+    ("13.", True, "13.0"),
+    ("", False, None),          # Empty string
+    ("   ", False, None),       # Whitespace string
+    ("\t \n", False, None),     # Mixed whitespace (tab, space, newline)
+    (None, False, None),        # None input
+])
+def test_normalize_cuda_ver_good_cases(inp, force_full_minor, expected):
+    assert normalize_cuda_ver(inp, force_full_minor) == expected
+
+@pytest.mark.parametrize("inp", [
+    "foo",          # not a number
+    "12.bar",       # non-digit minor
+    "x.y",          # both wrong
+    "-12.1",        # minus not allowed (isdigit is False)
+    "12.-1",        # minus not allowed (isdigit is False)
+    object(),       # invalid type
+    [12, 1],        # invalid type
+])
+def test_normalize_cuda_ver_invalid(inp):
+    if isinstance(inp, str) or isinstance(inp, (float, int)) or inp is None:
+        with pytest.raises(ValueError):
+            normalize_cuda_ver(inp)
+    else:
+        with pytest.raises(TypeError):
+            normalize_cuda_ver(inp)
