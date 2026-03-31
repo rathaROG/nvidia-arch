@@ -7,7 +7,7 @@ A lightweight tool for detecting and querying NVIDIA GPU architectures (SM/CC),
 and generating `-gencode` flags for CUDA builds
 """
 
-__version__ = '7.0.0'
+__version__ = '7.1.0'
 
 from .arches import (
     ALL_ARCHS,
