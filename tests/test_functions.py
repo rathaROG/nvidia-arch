@@ -41,6 +41,7 @@ def test_get_arches_basic(kwargs, expected):
     ({"gpu_type": 'jets', "cuda_ver": '12.8', "min_sm": 60, "return_mode": 'cc_list', "add_ptx": True}, ['6.2', '7.2', '8.7', '10.1+PTX']),
     ({"gpu_type": 'dcen', "cuda_ver": '12.9', "min_sm": 30, "return_mode": 'cc_list', "add_ptx": True}, ['5.2', '6.0', '6.1', '7.0', '7.5', '8.0', '8.6', '8.9', '9.0', '10.0', '10.3', '12.0+PTX']),
     ({"gpu_type": 'cons+jets', "cuda_ver": '13.2', "min_sm": 75, "return_mode": 'sm_list', "add_ptx": True}, ['75', '86', '87', '89', '110', '120', '121+PTX']),
+    ({"gpu_type": 'cons+jets', "cuda_ver": '13.3', "min_sm": 75, "return_mode": 'sm_list', "add_ptx": True}, ['75', '86', '87', '89', '110', '120', '121+PTX']),
 ])
 def test_get_arches_full(kwargs, expected):
     result = get_arches(**kwargs)
