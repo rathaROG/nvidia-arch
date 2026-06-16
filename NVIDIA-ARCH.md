@@ -98,6 +98,7 @@ CUDA Arch (min..max)   Consumer/Workstation (cons)                Jetson (jets)
 13.0  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;11.0
 13.1  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;11.0
 13.2  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;11.0
+13.3  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;11.0
 =========================================================================================
 
 * All NVIDIA Architectures:
@@ -105,7 +106,7 @@ CUDA Arch (min..max)   Consumer/Workstation (cons)                Jetson (jets)
 
 * Other Notes:
   1. Architecture(s) 8.8 is not officially supported in CUDA 11.8–12.9.
-  2. Architecture(s) 10.1 is not officially supported in CUDA 13.0–13.2.
+  2. Architecture(s) 10.1 is not officially supported in CUDA 13.0–13.3.
   3. Architecture(s) 10.3 is not officially supported in CUDA 12.8–12.8.
   4. Architecture(s) 11.0 is not officially supported in CUDA 12.8–12.9.
 ```
