@@ -135,8 +135,9 @@ jobs:
       fail-fast: false
       matrix:
         cuda_version:
-          - "13.0.2"
-          - "13.2.0"
+          - "13.0.3"
+          - "13.2.1"
+          - "13.3.0"
     steps:
       - uses: actions/checkout@v6
       - name: Free disk space
