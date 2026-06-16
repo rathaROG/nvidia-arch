@@ -23,7 +23,7 @@
 | 12.0 – 12.6     | `5.0` – `9.0`                      |
 | 12.8            | `5.0` – `12.0`                     |
 | 12.9            | `5.0` – `12.1`                     |
-| 13.0 – 13.2     | `7.5` – `12.1`                     |
+| 13.0 – 13.3     | `7.5` – `12.1`                     |
 
 <sup>1. CUDA 12.8 does not include arch/compute `10.3` even though it already exposes arch/compute `12.0`. </sup><br>
 <sup>2. CUDA 12.8 and 12.9 are the only versions that expose arch/compute `10.1` (Meant for Thor T4000/5000, and later replaced by `11.0` in CUDA 13.x). </sup><br>
