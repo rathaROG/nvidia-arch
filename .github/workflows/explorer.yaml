@@ -81,8 +81,8 @@ jobs:
         cuda_version:
           - "12.0.1"
           - "12.6.3"
-          - "12.8.1"
-          - "12.9.1"
+          - "12.8.2"
+          - "12.9.2"
     steps:
       - uses: actions/checkout@v6
       - name: Free disk space
@@ -137,7 +137,8 @@ jobs:
         cuda_version:
           - "13.0.3"
           - "13.2.1"
-          - "13.3.0"
+          - "13.3.1"
+          - "13.4.1"
     steps:
       - uses: actions/checkout@v6
       - name: Free disk space
