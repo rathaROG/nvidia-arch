@@ -3,6 +3,9 @@ name: Explore
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   cuda-arch-11x:
     name: CUDA 11.x
@@ -18,7 +21,7 @@ jobs:
           - "11.7.1"
           - "11.8.0"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Free disk space
         run: |
           sudo rm -rf /usr/local/lib/android
@@ -68,6 +71,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: info-${{ matrix.cuda_version }}
+          if-no-files-found: error
           path: |
             tools/nvcc-arch-cuda-*.txt
             tools/info-cuda-*.json
@@ -84,7 +88,7 @@ jobs:
           - "12.8.2"
           - "12.9.2"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Free disk space
         run: |
           sudo rm -rf /usr/local/lib/android
@@ -124,6 +128,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: info-${{ matrix.cuda_version }}
+          if-no-files-found: error
           path: |
             tools/nvcc-arch-cuda-*.txt
             tools/info-cuda-*.json
@@ -138,9 +143,9 @@ jobs:
           - "13.0.3"
           - "13.2.1"
           - "13.3.1"
-          - "13.4.1"
+          - "13.4.2"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Free disk space
         run: |
           sudo rm -rf /usr/local/lib/android
@@ -180,6 +185,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: info-${{ matrix.cuda_version }}
+          if-no-files-found: error
           path: |
             tools/nvcc-arch-cuda-*.txt
             tools/info-cuda-*.json
