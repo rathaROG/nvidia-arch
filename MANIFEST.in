@@ -4,6 +4,10 @@ include *.in
 include *.md
 include LICENSE
 
+# Keep the included regression tests runnable from the source distribution.
+recursive-include tests/fixtures *.txt *.json
+include tools/probe_cuda_targets.py tools/extract_cuda_arch_info.py
+
 # Exclude Python cache files everywhere
 global-exclude __pycache__/
 global-exclude *.pyc

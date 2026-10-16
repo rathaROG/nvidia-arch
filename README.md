@@ -35,6 +35,8 @@
 
 CUDA 11.0 already dropped compute capabilities `3.0` and `3.2`, as documented in the [CUDA 11.0 release notes](https://docs.nvidia.com/cuda/archive/11.0/cuda-toolkit-release-notes/index.html). Its compiler help still mentions them in a deprecation note, but excludes them from the allowed target values. The catalog below retains these legacy architectures; CUDA-version filtering excludes them.
 
+The package can also include architecture-specific `a` and family-specific `f` targets with `get_arches(include_a=True, include_f=True)`. Both options default to `False`; each variant is checked against the selected CUDA version and inherits its base architecture's GPU categories. See [variant support and PTX behavior](NVIDIA-ARCH.md#include-architecture-specific-a-and-family-specific-f-targets) for the version table and examples.
+
 ### Compute / Architectures:
 
 ```python

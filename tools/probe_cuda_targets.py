@@ -15,6 +15,8 @@ from pathlib import Path
 
 def target_key(target):
     match = re.fullmatch(r"(\d+)([a-z]*)", target)
+    if match is None:
+        raise ValueError("Invalid compiler target: {!r}".format(target))
     return int(match.group(1)), match.group(2)
 
 

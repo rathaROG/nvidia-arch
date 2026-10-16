@@ -5,12 +5,41 @@ import re
 import sys
 import subprocess
 from typing import Optional, Union, List, Dict, Tuple, Any
-from .arches import ALL_ARCHS, TYPE_FILTERS, CUDA_FILTERS, CUDA_EXCLUDES
+from .arches import (
+    ALL_ARCHS, ALL_ARCHS_VARIANTS, TYPE_FILTERS, CUDA_FILTERS, CUDA_EXCLUDES,
+    CUDA_VARIANTS,
+)
 
 
-PTX_SPLIT_RE = re.compile(r"(\d+\.\d+)\s*\+\s*PTX", re.IGNORECASE)
+PTX_SPLIT_RE = re.compile(r"(\d+(?:\.\d+)?[af]?)\s*\+\s*PTX", re.IGNORECASE)
 PTX_SUFFIX_RE = re.compile(r"\+ptx$", re.IGNORECASE)
 ARCH_SPLIT_RE = re.compile(r"[;\s,]+")
+SM_RE = re.compile(r"(\d+)([af]?)", re.IGNORECASE)
+
+
+def _sm_base(sm: str) -> str:
+    """Return the numeric base of a canonical SM target (without +PTX)."""
+    match = SM_RE.fullmatch(sm)
+    if match is None:
+        raise ValueError(f"Invalid SM code '{sm}'.")
+    return match.group(1)
+
+
+def _sm_sort_key(sm: str) -> Tuple[int, str]:
+    match = SM_RE.fullmatch(sm)
+    if match is None:
+        raise ValueError(f"Invalid SM code '{sm}'.")
+    return int(match.group(1)), match.group(2).lower()
+
+
+def _highest_baseline(sms: List[str]) -> str:
+    baselines = [sm for sm in sms if sm.isdigit()]
+    if not baselines:
+        raise ValueError(
+            "Automatic PTX requires a baseline architecture; "
+            "use explicit '+PTX' for a/f variants."
+        )
+    return max(baselines, key=int)
 
 
 def _fix_ptx_separation(arch_str: str) -> str:
@@ -52,6 +81,8 @@ def _sm_to_cc(sm: Union[str, int]) -> str:
         raise ValueError(f"Invalid SM string (no numeric prefix): '{sm}'")
     numeric = sm_str[:i]
     suffix = sm_str[i:]
+    if suffix[:1] in ('A', 'F'):
+        suffix = suffix[0].lower() + suffix[1:]
     sm_int = int(numeric)
     cc = f"{sm_int // 10}.{sm_int % 10}"
     return cc + suffix
@@ -86,12 +117,13 @@ def _cc_to_sm(cc: Union[str, int]) -> str:
     base = base.strip()
     if '.' in base:
         major, minor = base.split('.', 1)
-        if not (major.isdigit() and minor.isdigit()):
+        minor_match = SM_RE.fullmatch(minor)
+        if not (major.isdigit() and minor_match):
             raise ValueError(f"Invalid CC string: '{cc}'")
-        sm = f"{int(major)}{int(minor)}{suffix}"
+        sm = f"{int(major)}{int(minor_match.group(1))}{minor_match.group(2).lower()}{suffix}"
         return sm
-    elif base.isdigit():
-        return f"{base}{suffix}"
+    elif SM_RE.fullmatch(base):
+        return f"{base.lower()}{suffix}"
     else:
         raise ValueError(f"Invalid CC string: '{cc}'")
 
@@ -109,7 +141,8 @@ def normalize_arches(
     input_arches: list[str] or str
         The architectures to filter, as list or cc_string, all modes supported.
     exclude: list[str] or str or None
-        Architectures to remove, any input style, all modes supported.
+        Architectures to remove, any input style, all modes supported. Matches
+        exact targets: excluding '10.0' keeps '10.0a' and '10.0f'.
     return_mode : {'sm_list', 'cc_list', 'cc_string'}, optional
         Output type:
         - 'sm_list': list of SM codes as strings ['75', '86', ...]
@@ -138,7 +171,7 @@ def normalize_arches(
             if isinstance(x, str) and ';' in x:
                 items += [s.strip() for s in normalize_arch_string(x).split(';') if s.strip()]
             else:
-                items.append(str(x).strip())
+                items.append(_fix_ptx_separation(str(x)).strip())
 
     def expand_excl(e):
         if e is None:
@@ -153,9 +186,9 @@ def normalize_arches(
                 ex_cc.add(clean)
                 sm = clean.replace('.', '')
                 ex_sm.add(sm)
-            elif clean.isdigit():
+            elif SM_RE.fullmatch(clean):
                 ex_sm.add(clean)
-                ex_cc.add(f"{int(clean)//10}.{int(clean)%10}")
+                ex_cc.add(_sm_to_cc(clean).upper())
         return ex_sm, ex_cc
 
     excl_sm, excl_cc = expand_excl(exclude)
@@ -168,17 +201,20 @@ def normalize_arches(
             cc_form = base
         else:
             sm_form = base
-            cc_form = f"{int(base)//10}.{int(base)%10}" if base.isdigit() else base
+            cc_form = _sm_to_cc(base).upper() if SM_RE.fullmatch(base) else base
         if sm_form in excl_sm or cc_form in excl_cc:
             continue
         keep.append(entry)
 
+    def as_cc(value):
+        return _sm_to_cc(value) if SM_RE.fullmatch(PTX_SUFFIX_RE.sub('', value)) else value
+
     if return_mode == 'sm_list':
-        return [_cc_to_sm(k) if ('.' in k) else k for k in keep]
+        return [_cc_to_sm(k) if '.' in k or SM_RE.fullmatch(PTX_SUFFIX_RE.sub('', k)) else k for k in keep]
     elif return_mode == 'cc_list':
-        return [_sm_to_cc(k) if k.isdigit() or (k[:-4].isdigit() and k.upper().endswith('+PTX')) else k for k in keep]
+        return [as_cc(k) for k in keep]
     elif return_mode == 'cc_string':
-        return ';'.join([_sm_to_cc(k) if k.isdigit() or (k[:-4].isdigit() and k.upper().endswith('+PTX')) else k for k in keep])
+        return ';'.join(as_cc(k) for k in keep)
     else:
         raise ValueError(f"Unsupported return_mode: {return_mode}")
 
@@ -542,15 +578,33 @@ def detect_ctk(raise_on_error: bool = False) -> Optional[Dict[str, Any]]:
         return None
 
 
-def nvcc_list_arches() -> Optional[List[str]]:
+def _nvcc_allowed_values(help_out: str, option: str) -> Optional[str]:
+    section = re.search(
+        r"^--" + option + r"\b[^\n]*\n(.*?)(?=^--|\Z)",
+        help_out, flags=re.MULTILINE | re.DOTALL,
+    )
+    if section:
+        _, separator, allowed = section.group(1).partition("Allowed values for this option:")
+        if separator:
+            return allowed
+    return None
+
+
+def nvcc_list_arches(*, include_a: bool = False, include_f: bool = False) -> Optional[List[str]]:
     """
     Get list of Compute/SM versions supported by the current nvcc.
+
+    Baseline targets are returned by default. With include_a/include_f, read
+    allowed help values too: modern list commands omit these variants. A variant
+    must appear as both a virtual architecture and a real code target. Return
+    None if discovery fails, allowing get_arches to use its CUDA version table.
 
     Returns
     -------
     list of str or None
         List of SM version codes as strings, or None if unavailable.
     """
+    arches = None
     # Try modern CUDA API first (CUDA 11.1+)
     try:
         out = subprocess.check_output(
@@ -558,13 +612,13 @@ def nvcc_list_arches() -> Optional[List[str]]:
             stderr=subprocess.STDOUT
         ).decode("utf-8")
 
-        arches = re.findall(r"sm_(\d+)", out) or re.findall(r"compute_(\d+)", out)
-        if arches:
+        arches = re.findall(r"\bsm_(\d+)\b", out) or re.findall(r"\bcompute_(\d+)\b", out)
+        if arches and not (include_a or include_f):
             return sorted(set(arches))
     except Exception:
         pass  # Old CUDA → fallback
 
-    # Fallback for CUDA 11.0 and older
+    # Fallback for old nvcc, and exact variant discovery on newer toolkits.
     try:
         help_out = subprocess.check_output(
             ["nvcc", "--help"],
@@ -573,16 +627,22 @@ def nvcc_list_arches() -> Optional[List[str]]:
 
         # CUDA 11.0 help still mentions removed SM 30/32 in a deprecation note.
         # Only the allowed values for --gpu-architecture describe valid targets.
-        section = re.search(
-            r"^--gpu-architecture\b[^\n]*\n(.*?)(?=^--|\Z)",
-            help_out,
-            flags=re.MULTILINE | re.DOTALL,
-        )
-        if section:
-            allowed = section.group(1).partition("Allowed values for this option:")[2]
+        allowed = _nvcc_allowed_values(help_out, "gpu-architecture")
+        if allowed is None:
+            return None
+        if not arches:
             arches = re.findall(r"\bsm_(\d+)\b", allowed)
-            if arches:
-                return sorted(set(arches))
+        if include_a or include_f:
+            code_allowed = _nvcc_allowed_values(help_out, "gpu-code")
+            if code_allowed is None:
+                return None
+            virtual = set(re.findall(r"\bcompute_(\d+[af])\b", allowed))
+            real = set(re.findall(r"\bsm_(\d+[af])\b", code_allowed))
+            arches += [target for target in virtual & real
+                       if (include_a and target.endswith('a')) or (include_f and target.endswith('f'))]
+            return sorted(set(arches), key=_sm_sort_key) or None
+        if arches:
+            return sorted(set(arches))
     except Exception:
         pass
 
@@ -604,8 +664,8 @@ def validate_arch_string(
     cc_string : str
         Semicolon-delimited architecture string, e.g. '7.5;8.6+PTX;12.0'
     force_highest_ptx : bool, optional
-        If True, removes '+PTX' from all entries and add to the numerically highest architecture.
-        This matches best practice for CUDA/PTX emission and prevents duplicates.
+        If True, move PTX to the highest baseline architecture and deduplicate.
+        Variant-only inputs require an explicit +PTX instead of this option.
     named_arches : dict, optional
         Mapping of architecture names to numeric architecture strings, e.g., {'Pascal': '6.0;6.1+PTX'}
     against_cuda_ver : str or None, optional
@@ -636,9 +696,7 @@ def validate_arch_string(
     """
 
     def arch_sort_key(val):
-        num = val.replace('+PTX', '').strip()
-        major, minor = map(int, num.split('.', 1))
-        return (major, minor)
+        return _sm_sort_key(_cc_to_sm(PTX_SUFFIX_RE.sub('', val)))
 
     # Expand named architectures
     s = cc_string
@@ -652,24 +710,26 @@ def validate_arch_string(
     clean_items = []
     for item in items:
         norm = item
-        m = re.fullmatch(r"(\d+)\.(\d+)(\+PTX)?", norm, flags=re.IGNORECASE)
+        m = re.fullmatch(r"(\d+)\.(\d+)([af]?)(\+PTX)?", norm, flags=re.IGNORECASE)
         if not m:
             raise ValueError(f"Invalid arch entry: '{item}'.")
-        clean_items.append(norm)
+        clean_items.append(m.group(1) + '.' + m.group(2) + m.group(3).lower()
+                           + ('+PTX' if m.group(4) else ''))
     
     # Deduplicate and sort
     clean_items = sorted(set(clean_items), key=arch_sort_key)
 
     # Add PTX only to the highest architecture if force_highest_ptx is True
     if force_highest_ptx:
-        items_no_ptx = [re.sub(r'\+PTX$', '', item, flags=re.IGNORECASE) for item in clean_items]
+        items_no_ptx = sorted({PTX_SUFFIX_RE.sub('', item) for item in clean_items}, key=arch_sort_key)
         if items_no_ptx:
-            items_no_ptx[-1] += '+PTX'
+            highest = _highest_baseline([_cc_to_sm(item) for item in items_no_ptx])
+            items_no_ptx = [item + '+PTX' if _cc_to_sm(item) == highest else item for item in items_no_ptx]
         clean_items = items_no_ptx
 
     # Validate against CUDA version filters
     if against_cuda_ver is not None:
-        cuda_ver = normalize_cuda_ver(against_cuda_ver)
+        cuda_ver = normalize_cuda_ver(against_cuda_ver, force_full_minor=True)
     else:
         ctk = detect_ctk()
         cuda_ver = ctk["version"] if ctk else None
@@ -679,8 +739,8 @@ def validate_arch_string(
         raise ValueError(f"Unknown or unsupported CUDA version '{cuda_ver}'.")
 
     # Check each cleaned entry against these sets (ignore +PTX for arch validity)
-    ALL_ARCHS_CC = [_sm_to_cc(sm) for sm in ALL_ARCHS]
-    valid_for_ver = set([_sm_to_cc(sm) for sm in CUDA_FILTERS[cuda_ver]])
+    ALL_ARCHS_CC = [_sm_to_cc(sm) for sm in ALL_ARCHS + ALL_ARCHS_VARIANTS]
+    valid_for_ver = {_sm_to_cc(sm) for sm in CUDA_FILTERS[cuda_ver] + CUDA_VARIANTS[cuda_ver]}
     unknown_arch = []
     unsupported_arch = []
     for item in clean_items:
@@ -714,7 +774,10 @@ def get_arches(
     min_sm: Optional[Union[str, int]] = None,
     return_mode: str = "sm_list",
     add_ptx: bool = False,
-    raise_on_error: bool = False
+    raise_on_error: bool = False,
+    *,
+    include_a: bool = False,
+    include_f: bool = False,
 ) -> Union[List[str], str]:
     """
     Return the list of GPU architectures (SM versions) supported by the installed
@@ -722,9 +785,8 @@ def get_arches(
 
     PTX emission policy:
     --------------------
-    If add_ptx=True, PTX is added **only for the highest SM architecture** in the
-    filtered/validated list. This follows NVIDIA best practices and matches the
-    strategy used by PyTorch, TensorFlow, and official CUDA wheels.
+    If add_ptx=True, PTX is added only for the highest baseline architecture.
+    The optional a/f variants keep their narrower compatibility separate.
 
     Parameters
     ----------
@@ -749,6 +811,13 @@ def get_arches(
         If True, include PTX for the highest SM architecture.
     raise_on_error : bool, optional
         If True, raise exceptions on invalid versions/gpu_type; else print warning and return [].
+    include_a : bool, keyword-only, optional
+        Include architecture-specific targets supported by the selected CUDA
+        version or advertised by the installed compiler. Default: False.
+    include_f : bool, keyword-only, optional
+        Include family-specific targets supported by the selected CUDA version
+        or advertised by the installed compiler. Default: False. Both variants
+        inherit their numeric base's GPU categories and min_sm filtering.
 
     Returns
     -------
@@ -765,7 +834,7 @@ def get_arches(
     gpu_type = str(gpu_type).strip().lower()
     return_mode = str(return_mode).strip().lower()
 
-    cuda_ver_norm = normalize_cuda_ver(cuda_ver)
+    cuda_ver_norm = normalize_cuda_ver(cuda_ver, force_full_minor=True)
 
     # Lookup arches by CUDA version (from filter); else detect
     if cuda_ver_norm is not None:
@@ -776,9 +845,12 @@ def get_arches(
             print(msg)
             return []
         sm_list = CUDA_FILTERS[cuda_ver_norm][:]
+        sm_list += [target for target in CUDA_VARIANTS[cuda_ver_norm]
+                    if (include_a and target.endswith('a')) or (include_f and target.endswith('f'))]
     else:
         # Try nvcc --list-gpu-arch, fallback to nvcc --version version map
-        sm_list = nvcc_list_arches()
+        sm_list = (nvcc_list_arches(include_a=include_a, include_f=include_f)
+                   if include_a or include_f else nvcc_list_arches())
         if sm_list is None:
             ctk_info = detect_ctk(raise_on_error=raise_on_error)
             detected = ctk_info["version"] if ctk_info else None
@@ -789,6 +861,8 @@ def get_arches(
                 print(msg)
                 return []
             sm_list = CUDA_FILTERS[detected][:]
+            sm_list += [target for target in CUDA_VARIANTS[detected]
+                        if (include_a and target.endswith('a')) or (include_f and target.endswith('f'))]
 
     # Filter by GPU type (using TYPE_FILTERS)
     if gpu_type not in TYPE_FILTERS:
@@ -800,15 +874,16 @@ def get_arches(
 
     # Filter the SM list based on GPU type and minimum SM
     allowed = set(TYPE_FILTERS[gpu_type])
-    filtered = [sm for sm in sm_list if sm in allowed]
+    filtered = [sm for sm in sm_list if _sm_base(sm) in allowed]
     if min_sm is not None:
         min_sm = int(min_sm)
-        filtered = [sm for sm in filtered if int(sm) >= min_sm]
+        filtered = [sm for sm in filtered if int(_sm_base(sm)) >= min_sm]
 
     # Output format + PTX
-    filtered = sorted(filtered, key=int)
+    filtered = sorted(filtered, key=_sm_sort_key)
     if add_ptx and filtered:
-        filtered[-1] = filtered[-1] + "+PTX"
+        highest = _highest_baseline(filtered)
+        filtered = [sm + '+PTX' if sm == highest else sm for sm in filtered]
     if return_mode == "sm_list":
         return filtered
     elif return_mode == "cc_list":
@@ -839,15 +914,16 @@ def make_gencode_flags(
     min_sm: Optional[Union[str, int]] = None,
     verify_arch: bool = True,
     add_ptx: bool = False,
+    *,
+    against_cuda_ver: Optional[Union[str, float, int]] = None,
 ) -> List[str]:
     """
     Convert SM architecture codes or compute capability strings to nvcc -gencode flags.
 
     PTX emission policy:
     --------------------
-    (1) If add_ptx=True, PTX is added **only for the highest SM architecture** in the
-    filtered/validated list. This follows NVIDIA best practices and matches the
-    strategy used by PyTorch, TensorFlow, and official CUDA wheels.
+    (1) If add_ptx=True, PTX is added only for the highest baseline architecture.
+    Variant-only inputs must select PTX explicitly, e.g. '10.0a+PTX'.
 
     (2) If any architecture string ends with '+PTX', only those architectures receive 
     PTX code generation. In this case, the global add_ptx flag is ignored.
@@ -862,12 +938,16 @@ def make_gencode_flags(
     min_sm : str or int, optional
         Filter to architectures >= min_sm.
     verify_arch : bool, optional
-        If True, ensure all SM codes are in ALL_ARCHS. Default is True.
+        If True, check against the known baseline and a/f catalogs. Default: True.
     add_ptx : bool, optional
         If True, include PTX only for the highest SM architecture.
         Example: arch_input='8.6;8.9', add_pt=True
             sm_86 → -gencode=arch=compute_86,code=sm_86
             sm_89 → -gencode=arch=compute_89,code=[sm_89,compute_89]  (highest)
+    against_cuda_ver : str, float, int or None, keyword-only, optional
+        If provided, reject targets unsupported by this CUDA version, even when
+        verify_arch=False. None preserves the existing offline, catalog-only
+        validation; it does not detect the local CUDA version.
 
     Returns
     -------
@@ -881,12 +961,20 @@ def make_gencode_flags(
     ValueError
         For unknown SM/CC code or unrecognized entry.
     """
-        # Normalize input into a list of strings
+    # Normalize input into a list of strings
     if isinstance(arch_input, str):
         arch_input = normalize_arch_string(arch_input)
         raw_list = [item.strip() for item in arch_input.split(";") if item.strip()]
     else:
-        raw_list = [str(item).strip() for item in arch_input if str(item).strip()]
+        raw_list = [_fix_ptx_separation(str(item)).strip() for item in arch_input if str(item).strip()]
+
+    version = None
+    supported = None
+    if against_cuda_ver is not None:
+        version = normalize_cuda_ver(against_cuda_ver, force_full_minor=True)
+        if version not in CUDA_FILTERS:
+            raise ValueError(f"Unknown or unsupported CUDA version '{version}'.")
+        supported = set(CUDA_FILTERS[version] + CUDA_VARIANTS[version])
 
     # Convert min_sm to int if provided
     if min_sm is not None:
@@ -900,28 +988,32 @@ def make_gencode_flags(
         # Parse numeric part
         if "." in clean:
             sm = _cc_to_sm(clean)
-        elif clean.isdigit() and len(clean) in (2, 3):
-            sm = clean
+        elif re.fullmatch(r"\d{2,3}[af]?", clean, re.IGNORECASE):
+            sm = clean.lower()
         else:
             raise ValueError(f"Unrecognized architecture string: '{item}'")
+        if not SM_RE.fullmatch(sm):
+            raise ValueError(f"Unrecognized architecture string: '{item}'")
         # Apply min_sm filter
-        if min_sm is not None and int(sm) < min_sm:
+        if min_sm is not None and int(_sm_base(sm)) < min_sm:
             continue
         # Validate
-        if verify_arch and sm not in ALL_ARCHS:
+        if verify_arch and sm not in ALL_ARCHS and sm not in ALL_ARCHS_VARIANTS:
             raise ValueError(f"Invalid SM code '{sm}'.")
+        if supported is not None and sm not in supported:
+            raise ValueError(f"Unsupported architecture '{_sm_to_cc(sm)}' for CUDA {version}.")
         parsed.append((sm, wants_ptx))
 
     if not parsed:
         return []
 
     # Sort by SM
-    parsed.sort(key=lambda x: int(x[0]))
+    parsed.sort(key=lambda x: _sm_sort_key(x[0]))
     sms = [sm for sm, _ in parsed]
 
     # Determine PTX policy
     any_explicit_ptx = any(wants for _, wants in parsed)
-    highest = sms[-1]
+    highest = _highest_baseline(sms) if add_ptx and not any_explicit_ptx else None
 
     flags = []
     for sm, wants_ptx in parsed:
@@ -980,7 +1072,10 @@ def _cuda_excludes_footnotes(
 
 def print_summary(
     return_mode: str = "cc_string",
-    min_sm: Optional[Union[str, int]] = None
+    min_sm: Optional[Union[str, int]] = None,
+    *,
+    include_a: bool = False,
+    include_f: bool = False,
 ) -> None:
     """
     Print a formatted summary of CUDA versions and supported architectures.
@@ -993,6 +1088,10 @@ def print_summary(
         - Otherwise, outputs as SM numbers (e.g., '88').
     min_sm : str or int, optional
         Minimum SM number to include.
+    include_a : bool, keyword-only, optional
+        Include supported architecture-specific targets. Default: False.
+    include_f : bool, keyword-only, optional
+        Include supported family-specific targets. Default: False.
 
     Returns
     -------
@@ -1000,7 +1099,8 @@ def print_summary(
 
     Notes
     -----
-    Shows a compact summary table with per-version min/max, consumer and jetson architectures.
+    Shows baseline min/max ranges and consumer/Jetson targets. When variants
+    are requested, also list them per CUDA version across all GPU categories.
     """
     return_mode = str(return_mode).strip().lower()
 
@@ -1026,11 +1126,11 @@ def print_summary(
         "jets": max(len(col_names[2]), 16)
     }
 
+    rows = []
+    variants_by_version = []
     for ver in versions:
-        # "all": min..max
-        sm_list_all = [sm for sm in CUDA_FILTERS[ver] if sm in TYPE_FILTERS["all"]]
-        if min_sm is not None:
-            sm_list_all = [sm for sm in sm_list_all if int(sm) >= int(min_sm)]
+        # Keep the range numeric even when the category lists include variants.
+        sm_list_all = get_arches(cuda_ver=ver, min_sm=min_sm)
         if sm_list_all:
             min_val = sm_list_all[0]
             max_val = sm_list_all[-1]
@@ -1040,18 +1140,21 @@ def print_summary(
         col_widths["all"] = max(col_widths["all"], len(all_val) + 2)
 
         # "cons"
-        sm_list_cons = [sm for sm in CUDA_FILTERS[ver] if sm in TYPE_FILTERS["cons"]]
-        if min_sm is not None:
-            sm_list_cons = [sm for sm in sm_list_cons if int(sm) >= int(min_sm)]
+        sm_list_cons = get_arches('cons', ver, min_sm, include_a=include_a, include_f=include_f)
         cons_val = format_list(sm_list_cons) if sm_list_cons else "-"
         col_widths["cons"] = max(col_widths["cons"], len(cons_val) + 2)
 
         # "jets"
-        sm_list_jets = [sm for sm in CUDA_FILTERS[ver] if sm in TYPE_FILTERS["jets"]]
-        if min_sm is not None:
-            sm_list_jets = [sm for sm in sm_list_jets if int(sm) >= int(min_sm)]
+        sm_list_jets = get_arches('jets', ver, min_sm, include_a=include_a, include_f=include_f)
         jets_val = format_list(sm_list_jets) if sm_list_jets else "-"
         col_widths["jets"] = max(col_widths["jets"], len(jets_val) + 2)
+        rows.append((ver, all_val, cons_val, jets_val))
+
+        if include_a or include_f:
+            targets = get_arches(cuda_ver=ver, min_sm=min_sm, include_a=include_a, include_f=include_f)
+            variants = [target for target in targets if not target.isdigit()]
+            if variants:
+                variants_by_version.append((ver, format_list(variants)))
 
     cuda_width = 6
     # Header
@@ -1065,41 +1168,31 @@ def print_summary(
     print("=" * (cuda_width + sum(col_widths.values())))
 
     # Rows
-    for ver in versions:
+    for ver, all_val, cons_val, jets_val in rows:
         row = ver.ljust(cuda_width)
-        # "all": min..max
-        sm_list_all = [sm for sm in CUDA_FILTERS[ver] if sm in TYPE_FILTERS["all"]]
-        if min_sm is not None:
-            sm_list_all = [sm for sm in sm_list_all if int(sm) >= int(min_sm)]
-        if sm_list_all:
-            min_val = sm_list_all[0]
-            max_val = sm_list_all[-1]
-            all_val = (_sm_to_cc(min_val) if return_mode.startswith("cc") else min_val) + ".." + (_sm_to_cc(max_val) if return_mode.startswith("cc") else max_val)
-        else:
-            all_val = "-"
         row += all_val.ljust(col_widths["all"])
-
-        # cons
-        sm_list_cons = [sm for sm in CUDA_FILTERS[ver] if sm in TYPE_FILTERS["cons"]]
-        if min_sm is not None:
-            sm_list_cons = [sm for sm in sm_list_cons if int(sm) >= int(min_sm)]
-        cons_val = format_list(sm_list_cons) if sm_list_cons else "-"
         row += cons_val.ljust(col_widths["cons"])
-
-        # jets
-        sm_list_jets = [sm for sm in CUDA_FILTERS[ver] if sm in TYPE_FILTERS["jets"]]
-        if min_sm is not None:
-            sm_list_jets = [sm for sm in sm_list_jets if int(sm) >= int(min_sm)]
-        jets_val = format_list(sm_list_jets) if sm_list_jets else "-"
         row += jets_val.ljust(col_widths["jets"])
 
         print(row)
     print("=" * (cuda_width + sum(col_widths.values())))
 
     # Footnote: all archs filtered by min_sm, returned in current mode
-    all_archs = [sm for sm in ALL_ARCHS if min_sm is None or int(sm) >= int(min_sm)]
+    catalog = ALL_ARCHS + [target for target in ALL_ARCHS_VARIANTS
+                           if (include_a and target.endswith('a')) or (include_f and target.endswith('f'))]
+    all_archs = sorted(
+        [sm for sm in catalog if min_sm is None or int(_sm_base(sm)) >= int(min_sm)],
+        key=_sm_sort_key,
+    )
     footnote = format_list(all_archs)
     print(f"\n* All NVIDIA Architectures:\n  {footnote}")
+
+    if include_a or include_f:
+        print("\n* Requested variants by CUDA version (all GPU categories):")
+        for ver, variants in variants_by_version:
+            print(f"  {ver}: {variants}")
+        if not variants_by_version:
+            print("  None at the selected minimum SM.")
 
     # Footnote: CUDA versions and their unsupported architectures
     notes = _cuda_excludes_footnotes(CUDA_EXCLUDES, return_mode=return_mode)

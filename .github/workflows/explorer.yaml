@@ -69,7 +69,7 @@ jobs:
               apt-get update && apt-get install -y python3 && \
               cd /io/tools && \
               python3 probe_cuda_targets.py --output-dir nvcc-probe-cuda-${{ matrix.cuda_version }} && \
-              PYTHONPATH=/io python3 extract_cuda_arch_info.py
+              PYTHONPATH=/io python3 extract_cuda_arch_info.py --probe-report nvcc-probe-cuda-${{ matrix.cuda_version }}/results.json
             "
           ls tools/info-cuda-*.json
       - name: Upload results as artifact
@@ -128,7 +128,7 @@ jobs:
               apt-get update && apt-get install -y python3 && \
               cd /io/tools && \
               python3 probe_cuda_targets.py --output-dir nvcc-probe-cuda-${{ matrix.cuda_version }} && \
-              PYTHONPATH=/io python3 extract_cuda_arch_info.py
+              PYTHONPATH=/io python3 extract_cuda_arch_info.py --probe-report nvcc-probe-cuda-${{ matrix.cuda_version }}/results.json
             "
           ls tools/info-cuda-*.json
       - name: Upload results as artifact
@@ -187,7 +187,7 @@ jobs:
               apt-get update && apt-get install -y python3 && \
               cd /io/tools && \
               python3 probe_cuda_targets.py --output-dir nvcc-probe-cuda-${{ matrix.cuda_version }} && \
-              PYTHONPATH=/io python3 extract_cuda_arch_info.py
+              PYTHONPATH=/io python3 extract_cuda_arch_info.py --probe-report nvcc-probe-cuda-${{ matrix.cuda_version }}/results.json
             "
           ls tools/info-cuda-*.json
       - name: Upload results as artifact

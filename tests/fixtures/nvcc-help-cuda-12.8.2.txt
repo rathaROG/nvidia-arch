@@ -1,0 +1,62 @@
+--gpu-architecture <arch>                           (-arch)
+        Specify the name of the class of NVIDIA 'virtual' GPU architecture for which
+        the CUDA input files must be compiled.
+        With the exception as described for the shorthand below, the architecture
+        specified with this option must be a 'virtual' architecture (such as compute_50).
+        Normally, this option alone does not trigger assembly of the generated PTX
+        for a 'real' architecture (that is the role of nvcc option '--gpu-code',
+        see below); rather, its purpose is to control preprocessing and compilation
+        of the input to PTX.
+        For convenience, in case of simple nvcc compilations, the following shorthand
+        is supported.  If no value for option '--gpu-code' is specified, then the
+        value of this option defaults to the value of '--gpu-architecture'.  In this
+        situation, as only exception to the description above, the value specified
+        for '--gpu-architecture' may be a 'real' architecture (such as a sm_50),
+        in which case nvcc uses the specified 'real' architecture and its closest
+        'virtual' architecture as effective architecture values.  For example, 'nvcc
+        --gpu-architecture=sm_50' is equivalent to 'nvcc --gpu-architecture=compute_50
+        --gpu-code=sm_50,compute_50'.
+        -arch=all         build for all supported architectures (sm_*), and add PTX
+        for the highest major architecture to the generated code.
+        -arch=all-major   build for just supported major versions (sm_*0), plus the
+        earliest supported, and add PTX for the highest major architecture to the
+        generated code.
+        -arch=native      build for all architectures (sm_*) on the current system
+        Note: -arch=native, -arch=all, -arch=all-major cannot be used with the -code
+        option, but can be used with -gencode options.
+        Allowed values for this option:  'all','all-major','compute_100','compute_100a',
+        'compute_101','compute_101a','compute_120','compute_120a','compute_50','compute_52',
+        'compute_53','compute_60','compute_61','compute_62','compute_70','compute_72',
+        'compute_75','compute_80','compute_86','compute_87','compute_89','compute_90',
+        'compute_90a','lto_100','lto_100a','lto_101','lto_101a','lto_120','lto_120a',
+        'lto_50','lto_52','lto_53','lto_60','lto_61','lto_62','lto_70','lto_72',
+        'lto_75','lto_80','lto_86','lto_87','lto_89','lto_90','lto_90a','native',
+        'sm_100','sm_100a','sm_101','sm_101a','sm_120','sm_120a','sm_50','sm_52',
+        'sm_53','sm_60','sm_61','sm_62','sm_70','sm_72','sm_75','sm_80','sm_86',
+        'sm_87','sm_89','sm_90','sm_90a'.
+
+--gpu-code <code>,...                               (-code)
+        Specify the name of the NVIDIA GPU to assemble and optimize PTX for.
+        nvcc embeds a compiled code image in the resulting executable for each specified
+        <code> architecture, which is a true binary load image for each 'real' architecture
+        (such as sm_50), and PTX code for the 'virtual' architecture (such as compute_50).
+        During runtime, such embedded PTX code is dynamically compiled by the CUDA
+        runtime system if no binary load image is found for the 'current' GPU.
+        Architectures specified for options '--gpu-architecture' and '--gpu-code'
+        may be 'virtual' as well as 'real', but the <code> architectures must be
+        compatible with the <arch> architecture.  When the '--gpu-code' option is
+        used, the value for the '--gpu-architecture' option must be a 'virtual' PTX
+        architecture.
+        For instance, '--gpu-architecture=compute_60' is not compatible with '--gpu-code=sm_52',
+        because the earlier compilation stages will assume the availability of 'compute_60'
+        features that are not present on 'sm_52'.
+        Allowed values for this option:  'compute_100','compute_100a','compute_101',
+        'compute_101a','compute_120','compute_120a','compute_50','compute_52','compute_53',
+        'compute_60','compute_61','compute_62','compute_70','compute_72','compute_75',
+        'compute_80','compute_86','compute_87','compute_89','compute_90','compute_90a',
+        'lto_100','lto_100a','lto_101','lto_101a','lto_120','lto_120a','lto_50',
+        'lto_52','lto_53','lto_60','lto_61','lto_62','lto_70','lto_72','lto_75',
+        'lto_80','lto_86','lto_87','lto_89','lto_90','lto_90a','sm_100','sm_100a',
+        'sm_101','sm_101a','sm_120','sm_120a','sm_50','sm_52','sm_53','sm_60','sm_61',
+        'sm_62','sm_70','sm_72','sm_75','sm_80','sm_86','sm_87','sm_89','sm_90',
+        'sm_90a'.

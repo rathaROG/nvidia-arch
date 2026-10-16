@@ -19,6 +19,8 @@ from .arches import (
     CUDA_FILTERS_RANGES,
     CUDA_FILTERS,
     CUDA_EXCLUDES,
+    CUDA_VARIANTS,
+    ALL_ARCHS_VARIANTS,
 )
 
 from .core import (
@@ -53,6 +55,8 @@ __all__: list = [
     "CUDA_FILTERS_RANGES",
     "CUDA_FILTERS",
     "CUDA_EXCLUDES",
+    "CUDA_VARIANTS",
+    "ALL_ARCHS_VARIANTS",
     # Main functions
     "find_gpus",              # New API name in v6
     "get_arches",             # New API name in v6

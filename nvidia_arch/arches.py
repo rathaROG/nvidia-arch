@@ -93,3 +93,34 @@ for (vmin, vmax), (amin, amax) in CUDA_FILTERS_RANGES.items():
         ]
         v = round(v + 0.1, 1)
 """dict: Mapping CUDA version strings ('major.minor') to lists of supported SM codes."""
+
+# Keep variants separate so the existing numeric catalogs remain compatible.
+# Verified by Explorer run 38828749437 (native and PTX images) and NVCC docs:
+# https://docs.nvidia.com/cuda/archive/12.0.0/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+# https://docs.nvidia.com/cuda/archive/12.8.0/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+# https://docs.nvidia.com/cuda/archive/12.9.0/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+# https://docs.nvidia.com/cuda/archive/13.4.2/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+CUDA_VARIANTS = {version: [] for version in CUDA_FILTERS}
+for versions, a_bases, f_bases in (
+    (["12.{}".format(minor) for minor in range(7)], ["90"], []),
+    (["12.8"], ["90", "100", "101", "120"], []),
+    (["12.9"], ["90", "100", "101", "103", "120", "121"],
+     ["100", "101", "103", "120", "121"]),
+    (["13.{}".format(minor) for minor in range(4)],
+     ["90", "100", "103", "110", "120", "121"],
+     ["100", "103", "110", "120", "121"]),
+    (["13.4"], ["90", "100", "103", "107", "110", "120", "121"],
+     ["100", "103", "107", "110", "120", "121"]),
+):
+    for version in versions:
+        CUDA_VARIANTS[version] = sorted(
+            [base + "a" for base in a_bases] + [base + "f" for base in f_bases],
+            key=lambda target: (int(target[:-1]), target[-1]),
+        )
+"""dict: Exact a/f targets per CUDA version; variants inherit their base GPU categories."""
+
+ALL_ARCHS_VARIANTS = sorted(
+    {target for targets in CUDA_VARIANTS.values() for target in targets},
+    key=lambda target: (int(target[:-1]), target[-1]),
+)
+"""list of str: Known suffixed targets, separate from the baseline ALL_ARCHS catalog."""
