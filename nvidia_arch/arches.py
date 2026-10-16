@@ -7,25 +7,27 @@ Definitions and filters for NVIDIA GPU architecture codes (SM/Compute).
 Supports all major CUDA/SM combinations for both consumer and Jetson GPUs.
 """
 
-# All arches from 30 (CUDA 11.0+)
+# Architecture catalog, including legacy 30/32; CUDA_FILTERS determines toolkit support.
 ALL_ARCHS = [
     "30", "32", "35", "37", "50", "52", "53",
     "60", "61", "62",
     "70", "72", "75",
     "80", "86", "87", "88", "89",
     "90",
-    "100", "101", "103",
+    "100", "101", "103", "107",
     "110",
     "120", "121",
 ]
 """list of str: All supported architecture codes."""
 
-# All arches for Consumer/Workstation (CUDA 11.0+)
+# All arches for Consumer/Workstation, including legacy architectures.
 ALL_ARCHS_CONS = ["30", "35", "50", "52", "60", "61", "70", "75", "86", "89", "120", "121"]
 """list of str: Consumer/Workstation GPU architectures."""
 
-# All arches for Jetson (CUDA 11.0+)
-ALL_ARCHS_JETS = ["32", "53", "62", "72", "87", "101", "110"]
+# All arches for Jetson, including legacy architectures.
+# NVIDIA groups SM 87/88 with Jetson Orin; the exact SM 88 device is unspecified.
+# https://docs.nvidia.com/cuda/tile-ir/13.4/sections/stability.html#supported-architectures
+ALL_ARCHS_JETS = ["32", "53", "62", "72", "87", "88", "101", "110"]
 """list of str: Jetson/embedded GPU architectures."""
 
 # All arches for Consumer/Workstation + Jetson
@@ -33,7 +35,8 @@ ALL_ARCHS_CONS_JETS = sorted(set(ALL_ARCHS_CONS + ALL_ARCHS_JETS), key=lambda x:
 """list of str: Union of Consumer/Workstation and Jetson architectures."""
 
 # All arches for Datacenter only
-ALL_ARCHS_DCEN = sorted(set(ALL_ARCHS) - set(ALL_ARCHS_JETS) - {"50", "88", "121"}, key=lambda x: int(x))
+# The same NVIDIA table identifies SM 107 as Rubin (HGX / Vera Rubin NVL72).
+ALL_ARCHS_DCEN = sorted(set(ALL_ARCHS) - set(ALL_ARCHS_JETS) - {"50", "121"}, key=lambda x: int(x))
 """list of str: Datacenter GPU architectures."""
 
 # Arch filters for different GPU types
@@ -48,22 +51,23 @@ TYPE_FILTERS = {
 
 # Arch filter ranges for different CUDA versions, mapping CUDA(START, END) to ARCH(MIN, MAX)
 CUDA_FILTERS_RANGES = {
-    (11.0, 11.0): (30, 80),
+    (11.0, 11.0): (35, 80),  # CUDA 11.0 dropped SM 30/32.
     (11.1, 11.3): (35, 86),
     (11.4, 11.7): (35, 87),
     (11.8, 11.8): (35, 90),
     (12.0, 12.6): (50, 90),
     (12.8, 12.8): (50, 120),
     (12.9, 12.9): (50, 121),
-    (13.0, 13.3): (75, 121),
+    (13.0, 13.4): (75, 121),
 }
 """dict: Mapping CUDA version ranges to supported SM ranges."""
 
 # Arches to exclude for each CUDA version (those that are valid but not supported by that CUDA version)
 CUDA_EXCLUDES = {
-    (11.8, 12.9): [88],   # mysterious, only in cuda 13.0 or later
-    (13.0, 13.3): [101],  # only in cuda 12.8 and 12.9
+    (11.8, 12.9): [88],   # Ampere / Jetson target, only in cuda 13.0 or later
+    (13.0, 13.4): [101],  # only in cuda 12.8 and 12.9
     (12.8, 12.8): [103],  # only in cuda 12.9 or later
+    (12.8, 13.3): [107],  # Rubin, first observed in the CUDA 13.4.1 Explorer output
     (12.8, 12.9): [110],  # only in cuda 13.0 or later
 }
 """dict: Mapping CUDA version ranges to lists of valid but unsupported SM codes."""

@@ -6,8 +6,8 @@ CUDA_VERSIONS_FLOAT = [float(v) for v in CUDA_VERSIONS_STR]
 def test_arch_88():
     """
     Test `get_arches()` function to see if it correctly lists the correct architectures.
-    Architecture 88 or 8.8 is mysterious; it is not documented or explained anywhere prior 
-    to CUDA 13.0, but it appears as supported starting from CUDA 13.0.
+    Architecture 88 or 8.8 is an Ampere target associated with Jetson Orin in
+    NVIDIA's Tile IR documentation, supported by nvcc starting from CUDA 13.0.
     """
     for cuda_ver in CUDA_VERSIONS_FLOAT:
 

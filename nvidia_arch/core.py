@@ -571,9 +571,18 @@ def nvcc_list_arches() -> Optional[List[str]]:
             stderr=subprocess.STDOUT
         ).decode("utf-8")
 
-        arches = re.findall(r"sm_(\d+)", help_out)
-        if arches:
-            return sorted(set(arches))
+        # CUDA 11.0 help still mentions removed SM 30/32 in a deprecation note.
+        # Only the allowed values for --gpu-architecture describe valid targets.
+        section = re.search(
+            r"^--gpu-architecture\b[^\n]*\n(.*?)(?=^--|\Z)",
+            help_out,
+            flags=re.MULTILINE | re.DOTALL,
+        )
+        if section:
+            allowed = section.group(1).partition("Allowed values for this option:")[2]
+            arches = re.findall(r"\bsm_(\d+)\b", allowed)
+            if arches:
+                return sorted(set(arches))
     except Exception:
         pass
 

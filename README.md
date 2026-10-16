@@ -6,7 +6,7 @@
 
 ✅ All info has been verified by the [***Explorer***](https://github.com/rathaROG/nvidia-arch/actions/workflows/explorer.yaml) 🤖
 
-***Updated on 2026-03-24***
+***Updated on 2026-10-16***
 
 </div>
 
@@ -16,33 +16,36 @@
 
 | CUDA Version    | Supported Compute Capabilities     |
 |-----------------|------------------------------------|
-| 11.0            | `3.0` – `8.0`                      |
+| 11.0            | `3.5` – `8.0`                      |
 | 11.1 – 11.3     | `3.5` – `8.6`                      |
 | 11.4 – 11.7     | `3.5` – `8.7`                      |
 | 11.8            | `3.5` – `9.0`                      |
 | 12.0 – 12.6     | `5.0` – `9.0`                      |
 | 12.8            | `5.0` – `12.0`                     |
 | 12.9            | `5.0` – `12.1`                     |
-| 13.0 – 13.3     | `7.5` – `12.1`                     |
+| 13.0 – 13.4     | `7.5` – `12.1`                     |
 
 <sup>1. CUDA 12.8 does not include arch/compute `10.3` even though it already exposes arch/compute `12.0`. </sup><br>
 <sup>2. CUDA 12.8 and 12.9 are the only versions that expose arch/compute `10.1` (Meant for Thor T4000/5000, and later replaced by `11.0` in CUDA 13.x). </sup><br>
 <sup>3. CUDA 12.8 and 12.9 do not support arch/compute `11.0` (Former `10.1` as explained in 2). </sup><br>
-<sup>4. CUDA 13.x includes a mysterious arch/compute `8.8` which is not documented or explained anywhere, see: [mysterious-88.png](https://github.com/rathaROG/nvidia-arch/blob/main/assets/mysterious-88.png). </sup><br>
+<sup>4. CUDA 13.x includes arch/compute `8.8`, an [Ampere target documented by NVCC](https://docs.nvidia.com/cuda/archive/13.0.0/cuda-compiler-driver-nvcc/index.html#gpu-feature-list). NVIDIA's [Tile IR table](https://docs.nvidia.com/cuda/tile-ir/13.4/sections/stability.html#supported-architectures) groups `sm_87` and `sm_88` with Jetson Orin, so this package classifies `8.8` as Jetson/embedded. The exact `8.8` device mapping remains unspecified; NVIDIA's [GPU capability list](https://developer.nvidia.com/cuda/gpus) still lists Orin models at `8.7`. </sup><br>
+<sup>5. CUDA 13.4 adds arch/compute `10.7` for [Rubin](https://docs.nvidia.com/cuda/archive/13.4.2/cuda-compiler-driver-nvcc/index.html#gpu-feature-list), confirmed in the CUDA 13.4.1 Explorer output. NVIDIA's [Tile IR table](https://docs.nvidia.com/cuda/tile-ir/13.4/sections/stability.html#supported-architectures) associates it with HGX Rubin NVL8 and Vera Rubin NVL72, so this package classifies it as datacenter. That table marks Rubin's Tile IR support as developer preview. </sup><br>
 
 ---
+
+CUDA 11.0 already dropped compute capabilities `3.0` and `3.2`, as documented in the [CUDA 11.0 release notes](https://docs.nvidia.com/cuda/archive/11.0/cuda-toolkit-release-notes/index.html). Its compiler help still mentions them in a deprecation note, but excludes them from the allowed target values. The catalog below retains these legacy architectures; CUDA-version filtering excludes them.
 
 ### Compute / Architectures:
 
 ```python
 # All archs from 30
-ALL_ARCH_QE30 = ["30", "32", "35", "37", "50", "52", "53", "60", "61", "62", "70", "72", "75", "80", "86", "87", "88", "89", "90", "100", "101", "103", "110", "120", "121"]
+ALL_ARCH_QE30 = ["30", "32", "35", "37", "50", "52", "53", "60", "61", "62", "70", "72", "75", "80", "86", "87", "88", "89", "90", "100", "101", "103", "107", "110", "120", "121"]
 
 # All archs from 30 for Consumer/Workstation GPUs
 ALL_ARCH_QE30_CONS = ["30", "35", "50", "52", "60", "61", "70", "75", "86", "89", "120", "121"]
 
 # All archs from 30 for Jetson/Embedded GPUs
-ALL_ARCH_QE30_JETS = ["32", "53", "62", "72", "87", "101", "110"]
+ALL_ARCH_QE30_JETS = ["32", "53", "62", "72", "87", "88", "101", "110"]
 ```
 
 ---
@@ -79,7 +82,7 @@ NVIDIA RTX A6000, 8.6
 
 ---
 
-### List all GPU architectures supported by CUDA Toolkit:
+### List baseline GPU architectures supported by CUDA Toolkit (11.1+):
 
 ```bash
 nvcc --list-gpu-arch

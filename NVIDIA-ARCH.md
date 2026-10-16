@@ -77,7 +77,7 @@ print_summary(min_sm=30)
 ```bash
 CUDA Arch (min..max)   Consumer/Workstation (cons)                Jetson (jets)
 =========================================================================================
-11.0  3.0..8.0          3.0;3.5;5.0;5.2;6.0;6.1;7.0;7.5            3.2;5.3;6.2;7.2
+11.0  3.5..8.0          3.5;5.0;5.2;6.0;6.1;7.0;7.5                5.3;6.2;7.2
 11.1  3.5..8.6          3.5;5.0;5.2;6.0;6.1;7.0;7.5;8.6            5.3;6.2;7.2
 11.2  3.5..8.6          3.5;5.0;5.2;6.0;6.1;7.0;7.5;8.6            5.3;6.2;7.2
 11.3  3.5..8.6          3.5;5.0;5.2;6.0;6.1;7.0;7.5;8.6            5.3;6.2;7.2
@@ -95,21 +95,25 @@ CUDA Arch (min..max)   Consumer/Workstation (cons)                Jetson (jets)
 12.6  5.0..9.0          5.0;5.2;6.0;6.1;7.0;7.5;8.6;8.9            5.3;6.2;7.2;8.7
 12.8  5.0..12.0         5.0;5.2;6.0;6.1;7.0;7.5;8.6;8.9;12.0       5.3;6.2;7.2;8.7;10.1
 12.9  5.0..12.1         5.0;5.2;6.0;6.1;7.0;7.5;8.6;8.9;12.0;12.1  5.3;6.2;7.2;8.7;10.1
-13.0  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;11.0
-13.1  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;11.0
-13.2  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;11.0
-13.3  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;11.0
+13.0  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;8.8;11.0
+13.1  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;8.8;11.0
+13.2  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;8.8;11.0
+13.3  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;8.8;11.0
+13.4  7.5..12.1         7.5;8.6;8.9;12.0;12.1                      8.7;8.8;11.0
 =========================================================================================
 
 * All NVIDIA Architectures:
-  3.0;3.2;3.5;3.7;5.0;5.2;5.3;6.0;6.1;6.2;7.0;7.2;7.5;8.0;8.6;8.7;8.8;8.9;9.0;10.0;10.1;10.3;11.0;12.0;12.1
+  3.0;3.2;3.5;3.7;5.0;5.2;5.3;6.0;6.1;6.2;7.0;7.2;7.5;8.0;8.6;8.7;8.8;8.9;9.0;10.0;10.1;10.3;10.7;11.0;12.0;12.1
 
 * Other Notes:
   1. Architecture(s) 8.8 is not officially supported in CUDA 11.8–12.9.
-  2. Architecture(s) 10.1 is not officially supported in CUDA 13.0–13.3.
+  2. Architecture(s) 10.1 is not officially supported in CUDA 13.0–13.4.
   3. Architecture(s) 10.3 is not officially supported in CUDA 12.8–12.8.
-  4. Architecture(s) 11.0 is not officially supported in CUDA 12.8–12.9.
+  4. Architecture(s) 10.7 is not officially supported in CUDA 12.8–13.3.
+  5. Architecture(s) 11.0 is not officially supported in CUDA 12.8–12.9.
 ```
+
+CUDA 11.0 supports compute capabilities starting at `3.5`; `3.0` and `3.2` were removed in that release. They remain in the legacy architecture catalog, but CUDA-version queries and validation exclude them. Automatic detection on CUDA 11.0 reads only the allowed target values in compiler help, ignoring its outdated deprecation note.
 
 #### Detect CTK (CUDA Toolkit) in your environment
 
@@ -190,11 +194,11 @@ get_arches(cuda_ver=None, min_sm=75)
 
 ```python
 from nvidia_arch import get_arches
-get_arches(cuda_ver="13.0", min_sm=75)
+get_arches(cuda_ver="13.4", min_sm=75)
 ```
 
 ```bash
-['75', '80', '86', '87', '88', '89', '90', '100', '103', '110', '120', '121']
+['75', '80', '86', '87', '88', '89', '90', '100', '103', '107', '110', '120', '121']
 ```
 
 #### Get architectures and filter by GPU type (Consumer, Jetson, etc.)
@@ -205,6 +209,11 @@ Supported inputs for `gpu_type`:
 - `"jets"`: Only Jetson/embedded GPUs
 - `"dcen"`: Only datacenter GPUs
 - `"cons+jets"`: Only consumer/workstation + Jetson/embedded GPUs
+
+NVIDIA's [Tile IR architecture table](https://docs.nvidia.com/cuda/tile-ir/13.4/sections/stability.html#supported-architectures) supports these classifications:
+
+- `88` / `8.8`: Ampere, grouped with Jetson Orin; included in `jets` and `cons+jets` for CUDA 13.x. The exact device mapping remains unspecified: the [GPU capability list](https://developer.nvidia.com/cuda/gpus) lists Orin models at `8.7`.
+- `107` / `10.7`: Rubin, associated with HGX Rubin NVL8 and Vera Rubin NVL72; included in `dcen` for CUDA 13.4. The Tile IR table marks Rubin support as developer preview.
 
 ```python
 from nvidia_arch import get_arches
@@ -234,7 +243,7 @@ get_arches(gpu_type="cons+jets", cuda_ver="13.0", min_sm=75, return_mode="cc_str
 ```
 
 ```bash
-'7.5;8.6;8.7;8.9;11.0;12.0;12.1+PTX'
+'7.5;8.6;8.7;8.8;8.9;11.0;12.0;12.1+PTX'
 ```
 
 #### Normalize architectures
@@ -300,7 +309,7 @@ make_gencode_flags(arches, add_ptx=True)
 ```
 
 ```bash
-['-gencode=arch=compute_87,code=sm_87', '-gencode=arch=compute_110,code=[sm_110,compute_110]']
+['-gencode=arch=compute_87,code=sm_87', '-gencode=arch=compute_88,code=sm_88', '-gencode=arch=compute_110,code=[sm_110,compute_110]']
 ```
 
 See a real example in [BEVFusionx](https://github.com/rathaumons/bevfusionx/blob/main/setup.py).

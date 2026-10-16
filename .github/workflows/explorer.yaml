@@ -32,7 +32,7 @@ jobs:
           docker system prune -af
       - name: Pull CUDA docker image ${{ matrix.cuda_version }}
         run: docker pull nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu20.04
-      - name: Save nvcc --list-gpu-arch output to file
+      - name: Save listed architectures or CUDA 11.0 allowed help values
         run: |
           docker run --rm \
             -v "$(pwd)":/io \
@@ -49,23 +49,27 @@ jobs:
               if nvcc --help 2>&1 | grep -q -- "--list-gpu-arch"; then
                 nvcc --list-gpu-arch > "$OUT" 2>&1
               else
-                echo "Parsed from nvcc --help:" > "$OUT"
-                nvcc --help | grep -o "sm_[0-9]\+" | sort -u | tr "\n" " " >> "$OUT"
+                echo "Parsed from nvcc --help allowed values:" > "$OUT"
+                nvcc --help | awk "
+                  /^--gpu-architecture / { section = 1; next }
+                  section && /^--/ { exit }
+                  section && /Allowed values for this option:/ { allowed = 1 }
+                  section && allowed { print }
+                " | grep -o "sm_[0-9]\+" | sort -u | tr "\n" " " >> "$OUT"
                 echo >> "$OUT"
               fi
             '
           cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
-      - name: Verify compiler targets and extract package info
+      - name: Verify compiler targets and extract checkout info
         run: |
           docker run --rm \
             -v "$(pwd)":/io \
             nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu20.04 \
             bash -c "\
-              apt-get update && apt-get install -y python3-pip && \
+              apt-get update && apt-get install -y python3 && \
               cd /io/tools && \
               python3 probe_cuda_targets.py --output-dir nvcc-probe-cuda-${{ matrix.cuda_version }} && \
-              pip3 install nvidia-arch && \
-              python3 extract_cuda_arch_info.py
+              PYTHONPATH=/io python3 extract_cuda_arch_info.py
             "
           ls tools/info-cuda-*.json
       - name: Upload results as artifact
@@ -115,17 +119,16 @@ jobs:
               fi
             "
           cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
-      - name: Verify compiler targets and extract package info
+      - name: Verify compiler targets and extract checkout info
         run: |
           docker run --rm \
             -v "$(pwd)":/io \
             nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04 \
             bash -c "\
-              apt-get update && apt-get install -y python3-pip && \
+              apt-get update && apt-get install -y python3 && \
               cd /io/tools && \
               python3 probe_cuda_targets.py --output-dir nvcc-probe-cuda-${{ matrix.cuda_version }} && \
-              pip3 install nvidia-arch && \
-              python3 extract_cuda_arch_info.py
+              PYTHONPATH=/io python3 extract_cuda_arch_info.py
             "
           ls tools/info-cuda-*.json
       - name: Upload results as artifact
@@ -175,17 +178,16 @@ jobs:
               fi
             "
           cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
-      - name: Verify compiler targets and extract package info
+      - name: Verify compiler targets and extract checkout info
         run: |
           docker run --rm \
             -v "$(pwd)":/io \
             nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04 \
             bash -c "\
-              apt-get update && apt-get install -y python3-pip && \
+              apt-get update && apt-get install -y python3 && \
               cd /io/tools && \
               python3 probe_cuda_targets.py --output-dir nvcc-probe-cuda-${{ matrix.cuda_version }} && \
-              pip3 install nvidia-arch && \
-              python3 extract_cuda_arch_info.py
+              PYTHONPATH=/io python3 extract_cuda_arch_info.py
             "
           ls tools/info-cuda-*.json
       - name: Upload results as artifact
