@@ -55,19 +55,21 @@ jobs:
               fi
             '
           cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
-      - name: Run extract_cuda_arch_info.py using mounted /io
+      - name: Verify compiler targets and extract package info
         run: |
           docker run --rm \
             -v "$(pwd)":/io \
             nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu20.04 \
             bash -c "\
               apt-get update && apt-get install -y python3-pip && \
-              pip3 install nvidia-arch && \
               cd /io/tools && \
+              python3 probe_cuda_targets.py --output-dir nvcc-probe-cuda-${{ matrix.cuda_version }} && \
+              pip3 install nvidia-arch && \
               python3 extract_cuda_arch_info.py
             "
           ls tools/info-cuda-*.json
       - name: Upload results as artifact
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: info-${{ matrix.cuda_version }}
@@ -75,6 +77,7 @@ jobs:
           path: |
             tools/nvcc-arch-cuda-*.txt
             tools/info-cuda-*.json
+            tools/nvcc-probe-cuda-*/
 
   cuda-arch-12x:
     name: CUDA 12.x
@@ -112,19 +115,21 @@ jobs:
               fi
             "
           cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
-      - name: Run extract_cuda_arch_info.py using mounted /io
+      - name: Verify compiler targets and extract package info
         run: |
           docker run --rm \
             -v "$(pwd)":/io \
             nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04 \
             bash -c "\
               apt-get update && apt-get install -y python3-pip && \
-              pip3 install nvidia-arch && \
               cd /io/tools && \
+              python3 probe_cuda_targets.py --output-dir nvcc-probe-cuda-${{ matrix.cuda_version }} && \
+              pip3 install nvidia-arch && \
               python3 extract_cuda_arch_info.py
             "
           ls tools/info-cuda-*.json
       - name: Upload results as artifact
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: info-${{ matrix.cuda_version }}
@@ -132,6 +137,7 @@ jobs:
           path: |
             tools/nvcc-arch-cuda-*.txt
             tools/info-cuda-*.json
+            tools/nvcc-probe-cuda-*/
 
   cuda-arch-13x:
     name: CUDA 13.x
@@ -169,19 +175,21 @@ jobs:
               fi
             "
           cat tools/nvcc-arch-cuda-${{ matrix.cuda_version }}.txt
-      - name: Run extract_cuda_arch_info.py using mounted /io
+      - name: Verify compiler targets and extract package info
         run: |
           docker run --rm \
             -v "$(pwd)":/io \
             nvidia/cuda:${{ matrix.cuda_version }}-devel-ubuntu22.04 \
             bash -c "\
               apt-get update && apt-get install -y python3-pip && \
-              pip3 install nvidia-arch && \
               cd /io/tools && \
+              python3 probe_cuda_targets.py --output-dir nvcc-probe-cuda-${{ matrix.cuda_version }} && \
+              pip3 install nvidia-arch && \
               python3 extract_cuda_arch_info.py
             "
           ls tools/info-cuda-*.json
       - name: Upload results as artifact
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: info-${{ matrix.cuda_version }}
@@ -189,3 +197,4 @@ jobs:
           path: |
             tools/nvcc-arch-cuda-*.txt
             tools/info-cuda-*.json
+            tools/nvcc-probe-cuda-*/
